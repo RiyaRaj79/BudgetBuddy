@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BudgetBuddy — Budget Day Planner</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0d0d0d; --surface: #161616; --surface2: #1e1e1e;
+    --border: #2a2a2a; --accent: #c8f04a; --accent2: #f04a7a;
+    --text: #f0f0f0; --muted: #888; --card-r: 16px;
+  }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; overflow-x: hidden; }
+
+  .noise { position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"); opacity: 0.4; }
+  .blob { position: fixed; border-radius: 50%; filter: blur(80px); pointer-events: none; z-index: 0; }
+  .blob1 { width: 400px; height: 400px; background: rgba(200,240,74,0.07); top: -100px; right: -100px; }
+  .blob2 { width: 350px; height: 350px; background: rgba(240,74,122,0.06); bottom: 0; left: -80px; }
+
+  /* ── LOGIN ── */
+  #loginScreen {
+    position: fixed; inset: 0; z-index: 100;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center; padding: 1.5rem;
+    animation: fadeIn 0.4s ease;
+  }
+  #loginScreen.hide { animation: fadeOut 0.35s ease forwards; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; pointer-events: none; } }
+
+  .login-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 24px; padding: 3rem 2rem;
+    width: 100%; max-width: 400px; text-align: center;
+  }
+
+  .login-logo {
+    font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700;
+    letter-spacing: 0.15em; color: var(--accent); text-transform: uppercase; margin-bottom: 1.25rem;
+  }
+
+  .login-icon {
+    width: 64px; height: 64px; border-radius: 18px;
+    background: rgba(200,240,74,0.1); border: 1px solid rgba(200,240,74,0.2);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1.5rem; font-size: 28px;
+  }
+
+  .login-title {
+    font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800;
+    line-height: 1.1; margin-bottom: 0.5rem;
+  }
+  .login-sub { font-size: 14px; color: var(--muted); margin-bottom: 2.5rem; line-height: 1.6; }
+
+  .google-btn {
+    width: 100%; padding: 1rem 1.25rem;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 14px; color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px;
+    transition: all 0.2s; position: relative; overflow: hidden;
+  }
+  .google-btn::before {
+    content: ''; position: absolute; inset: 0;
+    background: rgba(200,240,74,0.05); opacity: 0; transition: opacity 0.2s;
+  }
+  .google-btn:hover { border-color: rgba(200,240,74,0.4); transform: translateY(-1px); }
+  .google-btn:hover::before { opacity: 1; }
+  .google-btn:active { transform: scale(0.98); }
+  .google-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  .google-icon { width: 20px; height: 20px; flex-shrink: 0; }
+
+  .login-footer { margin-top: 1.5rem; font-size: 11px; color: var(--muted); line-height: 1.6; }
+  .login-footer a { color: var(--accent); text-decoration: none; }
+
+  #authError {
+    font-size: 12px; color: var(--accent2);
+    margin-top: 14px; min-height: 18px;
+    background: rgba(240,74,122,0.08); border-radius: 8px;
+    padding: 8px 12px; display: none;
+  }
+  #authError.show { display: block; }
+
+  /* ── APP ── */
+  #appScreen { display: none; }
+  #appScreen.show { display: block; animation: fadeIn 0.4s ease; }
+
+  main { position: relative; z-index: 1; max-width: 780px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+  .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+  .logo { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.15em; color: var(--accent); text-transform: uppercase; }
+  .user-info { display: flex; align-items: center; gap: 10px; }
+  .user-avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--muted); overflow: hidden; flex-shrink: 0; }
+  .user-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+  .user-name { font-size: 13px; color: var(--muted); max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .logout-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-size: 12px; padding: 5px 12px; cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif; }
+  .logout-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  header { margin-bottom: 3rem; }
+  h1 { font-family: 'Syne', sans-serif; font-size: clamp(2rem, 6vw, 3.2rem); font-weight: 800; line-height: 1.05; }
+  h1 span { color: var(--accent); }
+  .subtitle { margin-top: 0.75rem; color: var(--muted); font-size: 15px; font-weight: 300; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--card-r); padding: 1.5rem; margin-bottom: 1.25rem; }
+  .card-label { font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 1rem; }
+
+  .budget-display { font-family: 'Syne', sans-serif; font-size: 3rem; font-weight: 800; color: var(--accent); line-height: 1; margin-bottom: 0.25rem; }
+  .budget-sub { font-size: 13px; color: var(--muted); margin-bottom: 1.25rem; }
+  input[type=range] { -webkit-appearance: none; width: 100%; height: 4px; background: var(--border); border-radius: 2px; outline: none; cursor: pointer; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); border: 3px solid var(--bg); box-shadow: 0 0 0 1px var(--accent); transition: transform 0.1s; }
+  input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+  .range-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+  .vibe-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .vibe-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 0.5rem; cursor: pointer; text-align: center; transition: all 0.2s; }
+  .vibe-btn:hover { border-color: var(--accent); }
+  .vibe-btn.active { background: var(--accent); border-color: var(--accent); }
+  .vibe-btn.active .vibe-name { color: #0d0d0d; }
+  .vibe-btn.active .vibe-desc { color: #3a4a10; }
+  .vibe-icon { font-size: 22px; margin-bottom: 6px; }
+  .vibe-name { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: var(--text); }
+  .vibe-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .people-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .counter-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .counter-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .people-count { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800; min-width: 40px; text-align: center; }
+  .people-label { font-size: 13px; color: var(--muted); }
+  .per-person { margin-top: 0.75rem; background: var(--surface2); border-radius: 8px; padding: 8px 12px; font-size: 13px; color: var(--muted); }
+  .per-person strong { color: var(--text); }
+
+  .city-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin-bottom: 1rem; }
+  .city-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 8px; cursor: pointer; text-align: center; transition: all 0.15s; font-size: 13px; color: var(--text); }
+  .city-btn:hover { border-color: var(--accent); }
+  .city-btn.active { border-color: var(--accent); background: rgba(200,240,74,0.08); color: var(--accent); }
+  .city-emoji { display: block; font-size: 18px; margin-bottom: 4px; }
+
+  .cta-btn { width: 100%; padding: 1rem; background: var(--accent); color: #0d0d0d; border: none; border-radius: 12px; font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: 0.05em; cursor: pointer; transition: all 0.2s; text-transform: uppercase; }
+  .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(200,240,74,0.25); }
+  .cta-btn:active { transform: scale(0.98); }
+
+  #results { display: none; }
+  #results.show { display: block; animation: fadeUp 0.4s ease; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+  .result-header { font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.75rem; }
+  .plan-title { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; }
+  .plan-meta { font-size: 13px; color: var(--muted); margin-bottom: 1.5rem; }
+
+  .activity-list { display: flex; flex-direction: column; gap: 10px; }
+  .activity { display: flex; gap: 14px; align-items: flex-start; background: var(--surface2); border-radius: 12px; padding: 14px; border: 1px solid var(--border); }
+  .activity-emoji { font-size: 22px; flex-shrink: 0; line-height: 1.2; }
+  .activity-info { flex: 1; }
+  .activity-name { font-weight: 500; font-size: 15px; margin-bottom: 2px; }
+  .activity-note { font-size: 12px; color: var(--muted); }
+  .activity-cost { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: var(--accent); flex-shrink: 0; align-self: center; }
+
+  .budget-bar-wrap { margin-top: 1.5rem; }
+  .budget-bar-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .budget-bar-track { background: var(--border); border-radius: 4px; height: 8px; overflow: hidden; }
+  .budget-bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s cubic-bezier(.4,0,.2,1); }
+
+  .summary-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 1.25rem; }
+  .summary-cell { background: var(--surface2); border-radius: 10px; padding: 12px; text-align: center; }
+  .summary-val { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 800; color: var(--text); }
+  .summary-key { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .tips-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 1rem; }
+  .tip { background: var(--surface2); border-radius: 10px; padding: 10px 12px; font-size: 12px; color: var(--muted); border-left: 3px solid var(--accent); }
+  .tip strong { display: block; color: var(--text); font-size: 13px; margin-bottom: 2px; }
+
+  .share-btn { width: 100%; margin-top: 1rem; padding: 0.75rem; background: transparent; border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+  .share-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .divider { height: 1px; background: var(--border); margin: 1.5rem 0; }
+
+  @media(max-width: 480px) {
+    .login-box { padding: 2rem 1.25rem; }
+    .summary-grid { grid-template-columns: 1fr 1fr; }
+    .tips-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="blob blob1"></div>
+<div class="blob blob2"></div>
+
+<!-- ══ LOGIN SCREEN ══ -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">BudgetBuddy</div>
+    <div class="login-icon">💸</div>
+    <div class="login-title">Plan Smart.<br>Spend Better.</div>
+    <div class="login-sub">Sign in with Google to start planning your perfect budget outing.</div>
+
+    <button class="google-btn" id="googleBtn" onclick="signInWithGoogle()">
+      <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+      </svg>
+      Continue with Google
+    </button>
+
+    <div id="authError"></div>
+
+    <div class="login-footer">
+      By signing in you agree to use this app responsibly.<br>
+      Your data is handled by <a href="https://firebase.google.com" target="_blank">Firebase Auth</a>.
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP SCREEN ══ -->
+<div id="appScreen">
+  <main>
+    <div class="top-bar">
+      <div class="logo">BudgetBuddy</div>
+      <div class="user-info">
+        <div class="user-avatar" id="userAvatar">?</div>
+        <div class="user-name" id="userName">User</div>
+        <button class="logout-btn" onclick="doSignOut()">Logout</button>
+      </div>
+    </div>
+
+    <header>
+      <h1>Plan your<br><span>perfect outing</span></h1>
+      <p class="subtitle">Plan Smart. Spend Better.</p>
+    </header>
+
+    <div class="card">
+      <div class="card-label">01 — Total Budget</div>
+      <div class="budget-display" id="budgetDisplay">₹500</div>
+      <div class="budget-sub">Drag to set your total spend limit</div>
+      <input type="range" id="budgetSlider" min="100" max="5000" step="50" value="500">
+      <div class="range-labels"><span>₹100</span><span>₹1,000</span><span>₹2,500</span><span>₹5,000</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">02 — Choose Your Vibe</div>
+      <div class="vibe-grid">
+        <button class="vibe-btn active" data-vibe="chill" onclick="setVibe(this)">
+          <div class="vibe-icon">🌿</div><div class="vibe-name">Chill</div><div class="vibe-desc">Relax & unwind</div>
+        </button>
+        <button class="vibe-btn" data-vibe="slow" onclick="setVibe(this)">
+          <div class="vibe-icon">☕</div><div class="vibe-name">Slow</div><div class="vibe-desc">Explore & wander</div>
+        </button>
+        <button class="vibe-btn" data-vibe="adventurous" onclick="setVibe(this)">
+          <div class="vibe-icon">⚡</div><div class="vibe-name">Adventurous</div><div class="vibe-desc">Thrills & energy</div>
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">03 — Number of People</div>
+      <div class="people-row">
+        <button class="counter-btn" onclick="changePeople(-1)">−</button>
+        <div class="people-count" id="peopleCount">2</div>
+        <div class="people-label">people</div>
+        <button class="counter-btn" onclick="changePeople(1)">+</button>
+      </div>
+      <div class="per-person">Budget per person: <strong id="perPerson">₹250</strong></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">04 — Pick Your City</div>
+      <div class="city-grid">
+        <button class="city-btn active" data-city="Chennai" onclick="setCity(this)"><span class="city-emoji">🌊</span>Chennai</button>
+        <button class="city-btn" data-city="Mumbai" onclick="setCity(this)"><span class="city-emoji">🏙️</span>Mumbai</button>
+        <button class="city-btn" data-city="Delhi" onclick="setCity(this)"><span class="city-emoji">🏛️</span>Delhi</button>
+        <button class="city-btn" data-city="Bangalore" onclick="setCity(this)"><span class="city-emoji">🌳</span>Bangalore</button>
+        <button class="city-btn" data-city="Hyderabad" onclick="setCity(this)"><span class="city-emoji">💎</span>Hyderabad</button>
+        <button class="city-btn" data-city="Kolkata" onclick="setCity(this)"><span class="city-emoji">🎨</span>Kolkata</button>
+        <button class="city-btn" data-city="Pune" onclick="setCity(this)"><span class="city-emoji">⛰️</span>Pune</button>
+        <button class="city-btn" data-city="Jaipur" onclick="setCity(this)"><span class="city-emoji">🏰</span>Jaipur</button>
+      </div>
+    </div>
+
+    <button class="cta-btn" onclick="generatePlan()">✦ Generate My Plan</button>
+
+    <div id="results">
+      <div class="divider"></div>
+      <div class="card">
+        <div class="result-header">Your Plan Is Ready</div>
+        <div class="plan-title" id="planTitle"></div>
+        <div class="plan-meta" id="planMeta"></div>
+        <div class="activity-list" id="activityList"></div>
+        <div class="budget-bar-wrap">
+          <div class="budget-bar-labels"><span>₹0 spent</span><span id="barLabel"></span></div>
+          <div class="budget-bar-track"><div class="budget-bar-fill" id="budgetBarFill" style="width:0%"></div></div>
+        </div>
+        <div class="summary-grid">
+          <div class="summary-cell"><div class="summary-val" id="sumSpent">₹0</div><div class="summary-key">Total Spent</div></div>
+          <div class="summary-cell"><div class="summary-val" id="sumSaved">₹0</div><div class="summary-key">Saved</div></div>
+          <div class="summary-cell"><div class="summary-val" id="sumPer">₹0</div><div class="summary-key">Per Person</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-label">💡 Budget Tips</div>
+        <div class="tips-grid" id="tipsGrid"></div>
+      </div>
+      <button class="share-btn" onclick="copyPlan()">📋 Copy Plan as Text</button>
+    </div>
+  </main>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+<script>
+  // ── Firebase Init ──
+  firebase.initializeApp({
+    apiKey: "AIzaSyCDWsdIjhZHauN3JguvqGLvglHPjMnEKEo",
+    authDomain: "budgetbuddy-19bdf.firebaseapp.com",
+    projectId: "budgetbuddy-19bdf",
+    storageBucket: "budgetbuddy-19bdf.firebasestorage.app",
+    messagingSenderId: "538136779448",
+    appId: "1:538136779448:web:dcdbcc1801e332c3e2b24d",
+    measurementId: "G-KTBW7TBKK7"
+  });
+  const auth = firebase.auth();
+
+  // Watch auth state — auto login if session exists
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      showApp(user);
+    } else {
+      document.getElementById('loginScreen').style.display = 'flex';
+      document.getElementById('loginScreen').classList.remove('hide');
+      document.getElementById('appScreen').classList.remove('show');
+    }
+  });
+
+  function showApp(user) {
+    const ls = document.getElementById('loginScreen');
+    ls.classList.add('hide');
+    setTimeout(() => { ls.style.display = 'none'; }, 350);
+    document.getElementById('appScreen').classList.add('show');
+
+    const avatar = document.getElementById('userAvatar');
+    if (user.photoURL) {
+      avatar.innerHTML = `<img src="${user.photoURL}" alt="">`;
+    } else {
+      avatar.textContent = (user.displayName || user.email || 'U')[0].toUpperCase();
+    }
+    // Show first name only
+    const firstName = (user.displayName || user.email || 'User').split(' ')[0];
+    document.getElementById('userName').textContent = firstName;
+  }
+
+  // Google Sign-In
+  function signInWithGoogle() {
+    const btn = document.getElementById('googleBtn');
+    btn.disabled = true;
+    btn.innerHTML = `<svg class="google-icon" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg> Signing in...`;
+    setError('');
+
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider)
+      .catch(e => {
+        btn.disabled = false;
+        btn.innerHTML = `<svg class="google-icon" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg> Continue with Google`;
+        setError(friendlyError(e));
+      });
+  }
+
+  function doSignOut() {
+    auth.signOut();
+  }
+
+  function setError(msg) {
+    const el = document.getElementById('authError');
+    el.textContent = msg;
+    el.classList.toggle('show', !!msg);
+  }
+
+  function friendlyError(e) {
+    const map = {
+      'auth/popup-closed-by-user': 'Sign-in was cancelled. Please try again.',
+      'auth/popup-blocked': 'Popup was blocked. Please allow popups for this site.',
+      'auth/network-request-failed': 'Network error. Check your connection.',
+      'auth/cancelled-popup-request': '',
+    };
+    return map[e.code] || ('Error: ' + e.message);
+  }
+
+  // ── App Logic ──
+  let budget = 500, people = 2, vibe = 'chill', city = 'Chennai';
+
+  document.getElementById('budgetSlider').addEventListener('input', function() {
+    budget = parseInt(this.value);
+    document.getElementById('budgetDisplay').textContent = '₹' + budget.toLocaleString('en-IN');
+    updatePerPerson();
+  });
+
+  function updatePerPerson() {
+    document.getElementById('perPerson').textContent = '₹' + Math.round(budget / people).toLocaleString('en-IN');
+  }
+  function setVibe(el) {
+    document.querySelectorAll('.vibe-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active'); vibe = el.dataset.vibe;
+  }
+  function changePeople(d) {
+    people = Math.max(1, Math.min(20, people + d));
+    document.getElementById('peopleCount').textContent = people;
+    updatePerPerson();
+  }
+  function setCity(el) {
+    document.querySelectorAll('.city-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active'); city = el.dataset.city;
+  }
+
+  const activities = {
+    chill: [
+      { name: 'Botanical Garden walk', emoji: '🌿', baseCost: 20, note: 'Entry fee per person, great for group pics' },
+      { name: 'Street chai & snacks', emoji: '☕', baseCost: 30, note: 'Local tea stalls, budget-friendly bites' },
+      { name: 'Beach or lake visit', emoji: '🌊', baseCost: 0, note: 'Completely free! Bring packed food' },
+      { name: 'Local temple / heritage spot', emoji: '🏛️', baseCost: 10, note: 'Free or minimal donation' },
+      { name: 'Roadside lunch thali', emoji: '🍱', baseCost: 80, note: 'Wholesome local food per person' },
+      { name: 'Evening ice cream / juice', emoji: '🍦', baseCost: 40, note: 'Local roadside stalls' },
+      { name: 'Park / public garden', emoji: '🌳', baseCost: 15, note: 'Low-cost public parks' },
+    ],
+    slow: [
+      { name: 'Local flea market browse', emoji: '🛍️', baseCost: 100, note: 'Window shop + small finds' },
+      { name: 'Museum / art gallery', emoji: '🖼️', baseCost: 30, note: 'Student discounts usually available!' },
+      { name: 'Street food crawl', emoji: '🌮', baseCost: 120, note: '3-4 different street food spots' },
+      { name: 'Book café / reading nook', emoji: '📚', baseCost: 60, note: 'Coffee + browse for an hour' },
+      { name: 'Old town / bazaar walk', emoji: '🗺️', baseCost: 0, note: 'Free exploration, soak the culture' },
+      { name: 'Sunset viewpoint', emoji: '🌅', baseCost: 0, note: 'Find the best free spot in the city' },
+      { name: 'Local bus / metro hop', emoji: '🚌', baseCost: 25, note: 'City tour on a budget!' },
+    ],
+    adventurous: [
+      { name: 'Trekking trail / hill point', emoji: '🧗', baseCost: 50, note: 'Day trek near city outskirts' },
+      { name: 'Cycling rent', emoji: '🚴', baseCost: 80, note: 'Hourly rental near parks' },
+      { name: 'Badminton / outdoor sport', emoji: '🏸', baseCost: 60, note: 'Court rent + shuttle' },
+      { name: 'Nature trail / forest walk', emoji: '🌲', baseCost: 20, note: 'Guided or self-guided trails' },
+      { name: 'Street cricket / football', emoji: '⚽', baseCost: 0, note: '100% free, max fun!' },
+      { name: 'Energy food pack', emoji: '🥪', baseCost: 70, note: 'Pack sandwiches or buy local' },
+      { name: 'Bus to outskirts + back', emoji: '🚌', baseCost: 40, note: 'Local bus roundtrip' },
+    ]
+  };
+
+  const cityTips = {
+    Chennai: ['Marina Beach is totally free', 'MRTS is the cheapest way around', 'Idli-sambar for Rs.20 at mess canteens'],
+    Mumbai: ['BEST bus covers the whole city cheap', 'Dadar flower market is free to explore', 'Vada pav is Rs.15 per piece'],
+    Delhi: ['Metro is student-discount eligible', 'Lodhi Garden and India Gate are free', 'Paranthas at Paranthe Wali Gali = Rs.60'],
+    Bangalore: ['Cubbon Park is free & beautiful', 'BMTC Day Pass = Rs.70 unlimited', 'MTR masala dosa for Rs.40 at branches'],
+    Hyderabad: ['Golconda Fort is cheap on weekdays', 'Irani chai is Rs.15 anywhere', 'TSRTC student pass saves a lot'],
+    Kolkata: ['Yellow taxis are surprisingly affordable', 'Victoria Memorial entry is Rs.20', 'Kathi rolls for Rs.40 at street stalls'],
+    Pune: ['Sinhagad trek costs almost nothing', 'PMC cycle rental exists near river', 'Misal pav for Rs.50 is filling'],
+    Jaipur: ['City Palace student discount available', 'Pink City walk is completely free', 'Pyaaz kachori for Rs.25 at old city']
+  };
+
+  function generatePlan() {
+    const pool = activities[vibe];
+    let remaining = budget;
+    const chosen = [];
+    const shuffled = [...pool].sort(() => Math.random() - 0.5);
+    for (const act of shuffled) {
+      const total = act.baseCost * people;
+      if (remaining - total >= 0 || act.baseCost === 0) {
+        chosen.push({ ...act, total });
+        remaining -= total;
+        if (chosen.length >= 5) break;
+      }
+    }
+    const spent = budget - remaining;
+    const pct = Math.min(100, Math.round((spent / budget) * 100));
+
+    document.getElementById('planTitle').textContent = vibe.charAt(0).toUpperCase() + vibe.slice(1) + ' Day in ' + city;
+    document.getElementById('planMeta').textContent = '₹' + budget.toLocaleString('en-IN') + ' for ' + people + ' people · ₹' + Math.round(budget / people).toLocaleString('en-IN') + ' per person';
+    document.getElementById('activityList').innerHTML = chosen.map(a => `
+      <div class="activity">
+        <div class="activity-emoji">${a.emoji}</div>
+        <div class="activity-info">
+          <div class="activity-name">${a.name}</div>
+          <div class="activity-note">${a.note}</div>
+        </div>
+        <div class="activity-cost">${a.total === 0 ? 'Free' : '₹' + a.total.toLocaleString('en-IN')}</div>
+      </div>`).join('');
+
+    const fill = document.getElementById('budgetBarFill');
+    fill.style.width = pct + '%';
+    fill.style.background = pct > 90 ? '#f04a7a' : pct > 70 ? '#f0c44a' : '#c8f04a';
+    document.getElementById('barLabel').textContent = '₹' + spent.toLocaleString('en-IN') + ' / ₹' + budget.toLocaleString('en-IN');
+    document.getElementById('sumSpent').textContent = '₹' + spent.toLocaleString('en-IN');
+    document.getElementById('sumSaved').textContent = '₹' + remaining.toLocaleString('en-IN');
+    document.getElementById('sumPer').textContent = '₹' + Math.round(spent / people).toLocaleString('en-IN');
+    document.getElementById('tipsGrid').innerHTML = (cityTips[city] || cityTips['Chennai']).map(t => `<div class="tip"><strong>Tip</strong>${t}</div>`).join('');
+
+    const res = document.getElementById('results');
+    res.style.display = 'none'; res.classList.remove('show');
+    setTimeout(() => { res.style.display = 'block'; res.classList.add('show'); }, 10);
+    res.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    window._lastPlan = { chosen, city, vibe, budget, people, spent, remaining };
+  }
+
+  function copyPlan() {
+    const p = window._lastPlan; if (!p) return;
+    let txt = `BudgetBuddy Plan - ${p.vibe.toUpperCase()} DAY IN ${p.city.toUpperCase()}\n`;
+    txt += `Budget: Rs.${p.budget} | People: ${p.people} | Per person: Rs.${Math.round(p.budget / p.people)}\n\n`;
+    p.chosen.forEach(a => { txt += `${a.emoji} ${a.name} - ${a.total === 0 ? 'Free' : 'Rs.' + a.total}\n`; });
+    txt += `\nTotal spent: Rs.${p.spent} | Saved: Rs.${p.remaining}\nGenerated by BudgetBuddy`;
+    navigator.clipboard.writeText(txt).then(() => {
+      const btn = document.querySelector('.share-btn');
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = 'Copy Plan as Text', 2000);
+    });
+  }
+</script>
+</body>
+</html>
