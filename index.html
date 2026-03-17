@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BudgetBuddy — Budget Day Planner</title>
@@ -35,7 +37,7 @@
   .google-icon { width: 20px; height: 20px; flex-shrink: 0; }
   .login-footer { margin-top: 1.5rem; font-size: 11px; color: var(--muted); line-height: 1.6; }
   .login-footer a { color: var(--accent); text-decoration: none; }
-  #authError { font-size: 12px; color: var(--accent2); margin-top: 14px; min-height: 18px; background: rgba(240,74,122,0.08); border-radius: 8px; padding: 8px 12px; display: none; }
+  #authError { font-size: 12px; color: var(--accent2); margin-top: 14px; background: rgba(240,74,122,0.08); border-radius: 8px; padding: 8px 12px; display: none; }
   #authError.show { display: block; }
 
   /* APP */
@@ -50,7 +52,18 @@
   .user-name { font-size: 13px; color: var(--muted); max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .logout-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-size: 12px; padding: 5px 12px; cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif; }
   .logout-btn:hover { border-color: var(--accent2); color: var(--accent2); }
-  header { margin-bottom: 3rem; }
+
+  /* LOCATION BAR */
+  .location-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 10px; }
+  .location-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: background 0.3s; }
+  .location-dot.active { background: var(--accent); box-shadow: 0 0 0 3px rgba(200,240,74,0.2); }
+  .location-dot.error { background: var(--accent2); }
+  .location-text { font-size: 13px; color: var(--muted); flex: 1; }
+  .location-text strong { color: var(--text); }
+  .locate-btn { background: rgba(200,240,74,0.1); border: 1px solid rgba(200,240,74,0.2); border-radius: 8px; color: var(--accent); font-size: 12px; font-weight: 500; padding: 5px 12px; cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif; white-space: nowrap; }
+  .locate-btn:hover { background: rgba(200,240,74,0.2); }
+
+  header { margin-bottom: 2rem; }
   h1 { font-family: 'Syne', sans-serif; font-size: clamp(2rem, 6vw, 3.2rem); font-weight: 800; line-height: 1.05; }
   h1 span { color: var(--accent); }
   .subtitle { margin-top: 0.75rem; color: var(--muted); font-size: 15px; font-weight: 300; }
@@ -99,13 +112,22 @@
   .activity { background: var(--surface2); border-radius: 14px; padding: 14px; border: 1px solid var(--border); margin-bottom: 10px; }
   .activity-top { display: flex; gap: 14px; align-items: flex-start; }
   .activity-emoji { font-size: 22px; flex-shrink: 0; line-height: 1.2; }
-  .activity-info { flex: 1; }
+  .activity-info { flex: 1; min-width: 0; }
   .activity-name { font-weight: 600; font-size: 15px; margin-bottom: 2px; color: var(--text); }
   .activity-place { font-size: 13px; color: var(--accent); font-weight: 500; margin-bottom: 3px; }
   .activity-note { font-size: 12px; color: var(--muted); }
   .activity-cost { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: var(--accent); flex-shrink: 0; align-self: center; }
-  .maps-btn { display: inline-flex; align-items: center; gap: 5px; margin-top: 10px; padding: 5px 12px; background: rgba(200,240,74,0.08); border: 1px solid rgba(200,240,74,0.2); border-radius: 20px; font-size: 11px; color: var(--accent); text-decoration: none; font-weight: 500; transition: all 0.15s; cursor: pointer; }
-  .maps-btn:hover { background: rgba(200,240,74,0.15); }
+
+  /* DISTANCE + DIRECTIONS ROW */
+  .activity-footer { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .distance-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 20px; font-size: 11px; color: var(--muted); }
+  .distance-badge.near { border-color: rgba(200,240,74,0.3); color: var(--accent); background: rgba(200,240,74,0.07); }
+  .distance-badge.medium { border-color: rgba(240,196,74,0.3); color: #f0c44a; background: rgba(240,196,74,0.07); }
+  .distance-badge.far { border-color: rgba(240,74,122,0.3); color: var(--accent2); background: rgba(240,74,122,0.07); }
+  .directions-btn { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; background: rgba(200,240,74,0.08); border: 1px solid rgba(200,240,74,0.2); border-radius: 20px; font-size: 11px; color: var(--accent); text-decoration: none; font-weight: 500; transition: all 0.15s; cursor: pointer; }
+  .directions-btn:hover { background: rgba(200,240,74,0.18); }
+  .osm-btn { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; background: rgba(100,149,237,0.08); border: 1px solid rgba(100,149,237,0.2); border-radius: 20px; font-size: 11px; color: #6495ed; text-decoration: none; font-weight: 500; transition: all 0.15s; }
+  .osm-btn:hover { background: rgba(100,149,237,0.15); }
 
   .budget-bar-wrap { margin-top: 1.5rem; }
   .budget-bar-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
@@ -130,6 +152,43 @@
 </style>
 </head>
 <body>
+  <script>
+
+// create map
+var map = L.map('map').setView([20.5937, 78.9629], 5); // default India view
+
+// load map tiles
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+ attribution: '© OpenStreetMap contributors'
+}).addTo(map);
+
+
+// detect user location
+if (navigator.geolocation) {
+
+    navigator.geolocation.getCurrentPosition(function(position){
+
+        var lat = position.coords.latitude;
+        var lon = position.coords.longitude;
+
+        // move map to user location
+        map.setView([lat, lon], 14);
+
+        // add marker
+        L.marker([lat, lon]).addTo(map)
+        .bindPopup("You are here 📍")
+        .openPopup();
+
+    }, function(){
+        alert("Location access denied.");
+    });
+
+} else {
+    alert("Geolocation is not supported by this browser.");
+}
+
+</script>
+  <div id="map"></div>
 <div class="noise"></div>
 <div class="blob blob1"></div>
 <div class="blob blob2"></div>
@@ -161,6 +220,14 @@
         <button class="logout-btn" onclick="doSignOut()">Logout</button>
       </div>
     </div>
+
+    <!-- LIVE LOCATION BAR -->
+    <div class="location-bar">
+      <div class="location-dot" id="locationDot"></div>
+      <div class="location-text" id="locationText">Location not detected yet</div>
+      <button class="locate-btn" onclick="detectLocation()">📍 Detect Me</button>
+    </div>
+
     <header>
       <h1>Plan your<br><span>perfect outing</span></h1>
       <p class="subtitle">Plan Smart. Spend Better.</p>
@@ -239,6 +306,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script>
+  // ── Firebase ──
   firebase.initializeApp({
     apiKey: "AIzaSyCDWsdIjhZHauN3JguvqGLvglHPjMnEKEo",
     authDomain: "budgetbuddy-19bdf.firebaseapp.com",
@@ -267,29 +335,94 @@
     if (user.photoURL) { avatar.innerHTML = `<img src="${user.photoURL}" alt="">`; }
     else { avatar.textContent = (user.displayName || user.email || 'U')[0].toUpperCase(); }
     document.getElementById('userName').textContent = (user.displayName || user.email || 'User').split(' ')[0];
+    detectLocation();
   }
 
   function signInWithGoogle() {
     const btn = document.getElementById('googleBtn');
-    btn.disabled = true; btn.textContent = 'Signing in...';
-    setError('');
+    btn.disabled = true; btn.textContent = 'Signing in...'; setError('');
     auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e => {
       btn.disabled = false;
       btn.innerHTML = `<svg class="google-icon" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg> Continue with Google`;
       setError(friendlyError(e));
     });
   }
-
   function doSignOut() { auth.signOut(); }
   function setError(msg) { const el = document.getElementById('authError'); el.textContent = msg; el.classList.toggle('show', !!msg); }
   function friendlyError(e) {
-    const map = { 'auth/popup-closed-by-user': 'Sign-in was cancelled.', 'auth/popup-blocked': 'Popup blocked. Please allow popups.', 'auth/network-request-failed': 'Network error. Check your connection.', 'auth/unauthorized-domain': 'This domain is not authorized. Add it in Firebase Console.', 'auth/cancelled-popup-request': '' };
+    const map = { 'auth/popup-closed-by-user': 'Sign-in was cancelled.', 'auth/popup-blocked': 'Popup blocked. Please allow popups.', 'auth/network-request-failed': 'Network error.', 'auth/unauthorized-domain': 'Domain not authorized. Add it in Firebase Console.', 'auth/cancelled-popup-request': '' };
     return map[e.code] || ('Error: ' + e.message);
+  }
+
+  // ── Location Detection ──
+  let userLat = null, userLng = null;
+
+  function detectLocation() {
+    const dot = document.getElementById('locationDot');
+    const txt = document.getElementById('locationText');
+    txt.textContent = 'Detecting your location...';
+    dot.className = 'location-dot';
+
+    if (!navigator.geolocation) {
+      txt.textContent = 'Geolocation not supported on this browser';
+      dot.className = 'location-dot error'; return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        userLat = pos.coords.latitude;
+        userLng = pos.coords.longitude;
+        dot.className = 'location-dot active';
+        // Reverse geocode using OpenStreetMap Nominatim (free)
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${userLat}&lon=${userLng}&format=json`)
+          .then(r => r.json())
+          .then(data => {
+            const area = data.address.suburb || data.address.neighbourhood || data.address.city_district || data.address.city || 'your area';
+            txt.innerHTML = `<strong>📍 ${area}</strong> — distances will show in your plan`;
+          })
+          .catch(() => {
+            txt.innerHTML = `<strong>📍 Location detected</strong> — distances will show in your plan`;
+          });
+      },
+      err => {
+        dot.className = 'location-dot error';
+        if (err.code === 1) txt.textContent = 'Location access denied. Tap "Detect Me" to try again.';
+        else txt.textContent = 'Could not detect location. Distances unavailable.';
+      },
+      { timeout: 10000, maximumAge: 300000 }
+    );
+  }
+
+  // Haversine formula — straight-line distance between 2 coords
+  function getDistance(lat1, lng1, lat2, lng2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
+              Math.sin(dLng/2) * Math.sin(dLng/2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  function formatDistance(km) {
+    if (km < 1) return Math.round(km * 1000) + ' m away';
+    return km.toFixed(1) + ' km away';
+  }
+
+  function distanceClass(km) {
+    if (km < 3) return 'near';
+    if (km < 8) return 'medium';
+    return 'far';
+  }
+
+  function walkTime(km) {
+    const mins = Math.round((km / 5) * 60);
+    if (mins < 60) return mins + ' min walk';
+    return Math.round(mins/60) + ' hr walk';
   }
 
   // ── App State ──
   let budget = 500, people = 2, vibe = 'chill', city = 'Chennai';
-
   document.getElementById('budgetSlider').addEventListener('input', function() {
     budget = parseInt(this.value);
     document.getElementById('budgetDisplay').textContent = '₹' + budget.toLocaleString('en-IN');
@@ -300,238 +433,238 @@
   function changePeople(d) { people = Math.max(1, Math.min(20, people + d)); document.getElementById('peopleCount').textContent = people; updatePerPerson(); }
   function setCity(el) { document.querySelectorAll('.city-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); city = el.dataset.city; }
 
-  // ── Real Named Places Database ──
+  // ── Places Database with coordinates ──
   const cityPlaces = {
     Chennai: {
       chill: [
-        { name: 'Temple visit', place: 'Kapaleeshwarar Temple', emoji: '🛕', baseCost: 0, note: 'Ancient Dravidian architecture, free entry', maps: 'Kapaleeshwarar+Temple+Chennai' },
-        { name: 'Beach walk', place: 'Marina Beach', emoji: '🌊', baseCost: 0, note: 'World\'s longest urban beach, free forever', maps: 'Marina+Beach+Chennai' },
-        { name: 'Park visit', place: 'Semmozhi Poonga', emoji: '🌿', baseCost: 20, note: 'Botanical garden, peaceful and budget-friendly', maps: 'Semmozhi+Poonga+Chennai' },
-        { name: 'Street food stop', place: 'Murugan Idli Shop', emoji: '🍽️', baseCost: 60, note: 'Famous soft idlis, sambar, chutney combo', maps: 'Murugan+Idli+Shop+Chennai' },
-        { name: 'Evening snack', place: 'Ratna Cafe', emoji: '☕', baseCost: 40, note: 'Iconic Chennai filter coffee & snacks', maps: 'Ratna+Cafe+Chennai' },
-        { name: 'Juice break', place: 'Kalathi Juice Corner', emoji: '🥤', baseCost: 30, note: 'Fresh fruit juices, very affordable', maps: 'Kalathi+Juice+Chennai' },
-        { name: 'Heritage walk', place: 'Mylapore Heritage Walk', emoji: '🚶', baseCost: 0, note: 'Free walk through ancient Mylapore streets', maps: 'Mylapore+Chennai' },
+        { name: 'Temple visit', place: 'Kapaleeshwarar Temple', emoji: '🛕', baseCost: 0, note: 'Ancient Dravidian architecture, free entry', lat: 13.0334, lng: 80.2696 },
+        { name: 'Beach walk', place: 'Marina Beach', emoji: '🌊', baseCost: 0, note: "World's longest urban beach, free forever", lat: 13.0500, lng: 80.2824 },
+        { name: 'Park visit', place: 'Semmozhi Poonga', emoji: '🌿', baseCost: 20, note: 'Botanical garden, peaceful and budget-friendly', lat: 13.0569, lng: 80.2497 },
+        { name: 'Street food', place: 'Murugan Idli Shop', emoji: '🍽️', baseCost: 60, note: 'Famous soft idlis, sambar, chutney combo', lat: 13.0418, lng: 80.2341 },
+        { name: 'Filter coffee', place: 'Ratna Cafe', emoji: '☕', baseCost: 40, note: 'Iconic Chennai filter coffee & snacks', lat: 13.0524, lng: 80.2495 },
+        { name: 'Juice break', place: 'Kalathi Juice Corner', emoji: '🥤', baseCost: 30, note: 'Fresh fruit juices, very affordable', lat: 13.0827, lng: 80.2707 },
+        { name: 'Heritage walk', place: 'Mylapore Heritage Walk', emoji: '🚶', baseCost: 0, note: 'Free walk through ancient Mylapore streets', lat: 13.0333, lng: 80.2705 },
       ],
       slow: [
-        { name: 'Museum visit', place: 'Government Museum Chennai', emoji: '🏛️', baseCost: 15, note: 'One of India\'s oldest museums, student discount', maps: 'Government+Museum+Chennai' },
-        { name: 'Art gallery', place: 'DakshinaChitra Heritage Museum', emoji: '🎨', baseCost: 75, note: 'South Indian culture & crafts', maps: 'DakshinaChitra+Chennai' },
-        { name: 'Café browse', place: 'Amethyst Cafe', emoji: '📚', baseCost: 80, note: 'Cosy café with books and garden', maps: 'Amethyst+Cafe+Chennai' },
-        { name: 'Market stroll', place: 'T. Nagar Shopping District', emoji: '🛍️', baseCost: 100, note: 'Window shop silk sarees & street buys', maps: 'T+Nagar+Chennai' },
-        { name: 'Street food crawl', place: 'Sowcarpet Street Food Lane', emoji: '🌮', baseCost: 100, note: 'North Indian street food in the heart of Chennai', maps: 'Sowcarpet+Chennai' },
-        { name: 'Sunset spot', place: 'Besant Nagar Beach (Elliot\'s Beach)', emoji: '🌅', baseCost: 0, note: 'Calm beach, great sunset views, free entry', maps: 'Elliot+Beach+Chennai' },
-        { name: 'Local bus ride', place: 'MTC Bus City Tour', emoji: '🚌', baseCost: 20, note: 'See the whole city for just Rs.20', maps: 'Chennai+MTC+bus' },
+        { name: 'Museum visit', place: 'Government Museum Chennai', emoji: '🏛️', baseCost: 15, note: "One of India's oldest museums, student discount", lat: 13.0694, lng: 80.2372 },
+        { name: 'Art gallery', place: 'DakshinaChitra Heritage Museum', emoji: '🎨', baseCost: 75, note: 'South Indian culture & crafts', lat: 12.8949, lng: 80.2270 },
+        { name: 'Cosy café', place: 'Amethyst Cafe', emoji: '📚', baseCost: 80, note: 'Cosy café with books and garden', lat: 13.0599, lng: 80.2484 },
+        { name: 'Market stroll', place: 'T. Nagar Shopping District', emoji: '🛍️', baseCost: 100, note: 'Window shop silk sarees & street buys', lat: 13.0418, lng: 80.2336 },
+        { name: 'Street food crawl', place: 'Sowcarpet Street Food Lane', emoji: '🌮', baseCost: 100, note: 'North Indian street food in Chennai', lat: 13.0867, lng: 80.2785 },
+        { name: 'Sunset spot', place: "Elliot's Beach (Besant Nagar)", emoji: '🌅', baseCost: 0, note: 'Calm beach, great sunset views, free', lat: 12.9990, lng: 80.2716 },
+        { name: 'City bus ride', place: 'MTC Bus City Tour', emoji: '🚌', baseCost: 20, note: 'See the whole city for just Rs.20', lat: 13.0827, lng: 80.2707 },
       ],
       adventurous: [
-        { name: 'Cycling', place: 'Necklace Road Cycling Track', emoji: '🚴', baseCost: 80, note: 'Rent cycles along the ECR road', maps: 'ECR+Chennai+cycling' },
-        { name: 'Trekking', place: 'Vandalur Zoo & Nature Walk', emoji: '🌲', baseCost: 60, note: 'Large zoo with nature trails', maps: 'Vandalur+Zoo+Chennai' },
-        { name: 'Water sport', place: 'Muttukadu Boathouse', emoji: '🚣', baseCost: 100, note: 'Boating on the backwaters', maps: 'Muttukadu+Boathouse+Chennai' },
-        { name: 'Sports ground', place: 'Jawaharlal Nehru Stadium', emoji: '🏸', baseCost: 50, note: 'Badminton & outdoor courts', maps: 'Jawaharlal+Nehru+Stadium+Chennai' },
-        { name: 'Outdoor game', place: 'Island Grounds', emoji: '⚽', baseCost: 0, note: 'Open ground for cricket & football', maps: 'Island+Grounds+Chennai' },
-        { name: 'Day trip', place: 'Mahabalipuram Shore Temple', emoji: '🏄', baseCost: 40, note: 'UNESCO site, 1.5hr bus ride from Chennai', maps: 'Mahabalipuram+Shore+Temple' },
-        { name: 'Snack up', place: 'Pondicherry House Restaurant', emoji: '🥙', baseCost: 70, note: 'Hearty South Indian meals for energy', maps: 'Pondicherry+House+Chennai' },
+        { name: 'Cycling', place: 'ECR Necklace Road Cycling', emoji: '🚴', baseCost: 80, note: 'Rent cycles along the ECR road', lat: 12.9716, lng: 80.2464 },
+        { name: 'Zoo & nature', place: 'Vandalur Zoo & Nature Walk', emoji: '🌲', baseCost: 60, note: 'Large zoo with nature trails', lat: 12.8793, lng: 80.0788 },
+        { name: 'Boating', place: 'Muttukadu Boathouse', emoji: '🚣', baseCost: 100, note: 'Boating on the backwaters', lat: 12.8283, lng: 80.2434 },
+        { name: 'Badminton', place: 'Jawaharlal Nehru Stadium', emoji: '🏸', baseCost: 50, note: 'Badminton & outdoor courts', lat: 13.0654, lng: 80.2494 },
+        { name: 'Open ground', place: 'Island Grounds', emoji: '⚽', baseCost: 0, note: 'Open ground for cricket & football', lat: 13.0878, lng: 80.2785 },
+        { name: 'Day trip', place: 'Mahabalipuram Shore Temple', emoji: '🏄', baseCost: 40, note: 'UNESCO site, 1.5hr bus from Chennai', lat: 12.6269, lng: 80.1927 },
+        { name: 'Hearty meal', place: 'Pondicherry House Restaurant', emoji: '🥙', baseCost: 70, note: 'Hearty South Indian meals for energy', lat: 13.0418, lng: 80.2341 },
       ]
     },
     Mumbai: {
       chill: [
-        { name: 'Temple visit', place: 'Siddhivinayak Temple', emoji: '🛕', baseCost: 0, note: 'Famous Ganesh temple, peaceful atmosphere', maps: 'Siddhivinayak+Temple+Mumbai' },
-        { name: 'Beach walk', place: 'Juhu Beach', emoji: '🌊', baseCost: 0, note: 'Iconic Mumbai beach, free and lively', maps: 'Juhu+Beach+Mumbai' },
-        { name: 'Street food', place: 'Vada Pav at Ashok Vada Pav', emoji: '🍔', baseCost: 30, note: 'Mumbai\'s most famous vada pav stall', maps: 'Ashok+Vada+Pav+Mumbai' },
-        { name: 'Garden visit', place: 'Hanging Gardens', emoji: '🌿', baseCost: 0, note: 'Scenic hilltop garden, free entry', maps: 'Hanging+Gardens+Mumbai' },
-        { name: 'Chai break', place: 'Kyani & Co. Cafe', emoji: '☕', baseCost: 40, note: 'Legendary Irani café since 1904', maps: 'Kyani+Co+Mumbai' },
-        { name: 'Evening walk', place: 'Marine Drive (Queen\'s Necklace)', emoji: '🌅', baseCost: 0, note: 'Best evening walk in Mumbai, free', maps: 'Marine+Drive+Mumbai' },
-        { name: 'Lunch', place: 'Sardar Refreshments', emoji: '🍱', baseCost: 80, note: 'Famous pav bhaji since 1956', maps: 'Sardar+Pav+Bhaji+Mumbai' },
+        { name: 'Temple visit', place: 'Siddhivinayak Temple', emoji: '🛕', baseCost: 0, note: 'Famous Ganesh temple, peaceful atmosphere', lat: 19.0172, lng: 72.8302 },
+        { name: 'Beach walk', place: 'Juhu Beach', emoji: '🌊', baseCost: 0, note: 'Iconic Mumbai beach, free and lively', lat: 19.0989, lng: 72.8269 },
+        { name: 'Street food', place: 'Vada Pav at Ashok Vada Pav', emoji: '🍔', baseCost: 30, note: "Mumbai's most famous vada pav stall", lat: 19.0176, lng: 72.8562 },
+        { name: 'Garden visit', place: 'Hanging Gardens', emoji: '🌿', baseCost: 0, note: 'Scenic hilltop garden, free entry', lat: 18.9558, lng: 72.8052 },
+        { name: 'Chai & snacks', place: 'Kyani & Co. Cafe', emoji: '☕', baseCost: 40, note: 'Legendary Irani café since 1904', lat: 18.9469, lng: 72.8239 },
+        { name: 'Evening walk', place: 'Marine Drive', emoji: '🌅', baseCost: 0, note: "Best evening walk in Mumbai, free", lat: 18.9432, lng: 72.8232 },
+        { name: 'Lunch', place: 'Sardar Refreshments Pav Bhaji', emoji: '🍱', baseCost: 80, note: 'Famous pav bhaji since 1956', lat: 18.9623, lng: 72.8322 },
       ],
       slow: [
-        { name: 'Museum', place: 'Chhatrapati Shivaji Maharaj Vastu Sangrahalaya', emoji: '🏛️', baseCost: 85, note: 'Stunning colonial-era museum', maps: 'CSMVS+Museum+Mumbai' },
-        { name: 'Market browse', place: 'Chor Bazaar Antique Market', emoji: '🛍️', baseCost: 50, note: 'Amazing antiques & unique finds', maps: 'Chor+Bazaar+Mumbai' },
-        { name: 'Café', place: 'Café Mondegar', emoji: '📚', baseCost: 80, note: 'Iconic café with Mario Miranda murals', maps: 'Cafe+Mondegar+Mumbai' },
-        { name: 'Food street', place: 'Mohammed Ali Road Street Food', emoji: '🌮', baseCost: 100, note: 'Best kebabs, nihari and biryani', maps: 'Mohammed+Ali+Road+Mumbai' },
-        { name: 'Heritage walk', place: 'Kala Ghoda Art District', emoji: '🎨', baseCost: 0, note: 'Free outdoor art installations & galleries', maps: 'Kala+Ghoda+Mumbai' },
-        { name: 'Sunset', place: 'Gateway of India', emoji: '🌅', baseCost: 0, note: 'Iconic monument, best at sunset, free', maps: 'Gateway+of+India+Mumbai' },
-        { name: 'Train ride', place: 'Mumbai Local Train', emoji: '🚂', baseCost: 15, note: 'Experience Mumbai\'s lifeline for Rs.15', maps: 'Mumbai+local+train' },
+        { name: 'Museum', place: 'CSMVS Museum', emoji: '🏛️', baseCost: 85, note: 'Stunning colonial-era museum', lat: 18.9269, lng: 72.8327 },
+        { name: 'Market browse', place: 'Chor Bazaar Antique Market', emoji: '🛍️', baseCost: 50, note: 'Amazing antiques & unique finds', lat: 18.9600, lng: 72.8340 },
+        { name: 'Heritage café', place: 'Café Mondegar', emoji: '📚', baseCost: 80, note: 'Iconic café with Mario Miranda murals', lat: 18.9279, lng: 72.8320 },
+        { name: 'Food street', place: 'Mohammed Ali Road', emoji: '🌮', baseCost: 100, note: 'Best kebabs, nihari and biryani', lat: 18.9555, lng: 72.8378 },
+        { name: 'Art district', place: 'Kala Ghoda Art District', emoji: '🎨', baseCost: 0, note: 'Free outdoor art installations', lat: 18.9296, lng: 72.8326 },
+        { name: 'Sunset', place: 'Gateway of India', emoji: '🌅', baseCost: 0, note: 'Iconic monument, best at sunset', lat: 18.9220, lng: 72.8347 },
+        { name: 'Local train', place: 'Mumbai Local Train Ride', emoji: '🚂', baseCost: 15, note: "Experience Mumbai's lifeline for Rs.15", lat: 18.9398, lng: 72.8354 },
       ],
       adventurous: [
-        { name: 'Trek', place: 'Sanjay Gandhi National Park Trek', emoji: '🧗', baseCost: 50, note: 'Forest trek inside the city!', maps: 'Sanjay+Gandhi+National+Park+Mumbai' },
-        { name: 'Cycling', place: 'Bandra Bandstand Promenade', emoji: '🚴', baseCost: 60, note: 'Cycle rentals along the seafront', maps: 'Bandra+Bandstand+Mumbai' },
-        { name: 'Cricket ground', place: 'Shivaji Park Grounds', emoji: '⚽', baseCost: 0, note: 'Free cricket & football ground', maps: 'Shivaji+Park+Mumbai' },
-        { name: 'Caves visit', place: 'Elephanta Caves', emoji: '🏔️', baseCost: 60, note: 'UNESCO caves via ferry, very affordable', maps: 'Elephanta+Caves+Mumbai' },
-        { name: 'Sport', place: 'Priyadarshini Park Jogging Track', emoji: '🏃', baseCost: 0, note: 'Free park with fitness equipment', maps: 'Priyadarshini+Park+Mumbai' },
-        { name: 'Day trip', place: 'Kanheri Caves Day Trek', emoji: '🌲', baseCost: 30, note: 'Ancient Buddhist caves inside SGNP', maps: 'Kanheri+Caves+Mumbai' },
-        { name: 'Energy meal', place: 'Swati Snacks', emoji: '🥙', baseCost: 80, note: 'Healthy Gujarati street snacks', maps: 'Swati+Snacks+Mumbai' },
+        { name: 'Forest trek', place: 'Sanjay Gandhi National Park', emoji: '🧗', baseCost: 50, note: 'Forest trek inside the city!', lat: 19.2147, lng: 72.9101 },
+        { name: 'Cycling', place: 'Bandra Bandstand Promenade', emoji: '🚴', baseCost: 60, note: 'Cycle rentals along the seafront', lat: 19.0596, lng: 72.8165 },
+        { name: 'Open ground', place: 'Shivaji Park Grounds', emoji: '⚽', baseCost: 0, note: 'Free cricket & football ground', lat: 19.0283, lng: 72.8427 },
+        { name: 'UNESCO caves', place: 'Elephanta Caves', emoji: '🏔️', baseCost: 60, note: 'UNESCO caves via ferry', lat: 18.9633, lng: 72.9315 },
+        { name: 'Jogging', place: 'Priyadarshini Park', emoji: '🏃', baseCost: 0, note: 'Free park with fitness equipment', lat: 18.9635, lng: 72.8073 },
+        { name: 'Buddhist caves', place: 'Kanheri Caves Trek', emoji: '🌲', baseCost: 30, note: 'Ancient Buddhist caves inside SGNP', lat: 19.2076, lng: 72.9062 },
+        { name: 'Healthy snacks', place: 'Swati Snacks', emoji: '🥙', baseCost: 80, note: 'Healthy Gujarati street snacks', lat: 18.9791, lng: 72.8202 },
       ]
     },
     Delhi: {
       chill: [
-        { name: 'Temple visit', place: 'Lotus Temple (Bahá\'í House)', emoji: '🛕', baseCost: 0, note: 'Beautiful lotus-shaped temple, free entry', maps: 'Lotus+Temple+Delhi' },
-        { name: 'Monument visit', place: 'India Gate', emoji: '🏛️', baseCost: 0, note: 'Iconic war memorial, free & open all day', maps: 'India+Gate+Delhi' },
-        { name: 'Garden', place: 'Lodhi Garden', emoji: '🌿', baseCost: 0, note: 'Beautiful 15th century garden, free entry', maps: 'Lodhi+Garden+Delhi' },
-        { name: 'Street food', place: 'Paranthe Wali Gali, Chandni Chowk', emoji: '🥞', baseCost: 60, note: 'Famous stuffed parathas since 1875', maps: 'Paranthe+Wali+Gali+Delhi' },
-        { name: 'Chai stop', place: 'Chaayos Café', emoji: '☕', baseCost: 50, note: 'Best chai variations in Delhi', maps: 'Chaayos+Delhi' },
-        { name: 'Evening walk', place: 'Connaught Place', emoji: '🌆', baseCost: 0, note: 'Free walk around Delhi\'s heart', maps: 'Connaught+Place+Delhi' },
-        { name: 'Lunch', place: 'Saravana Bhavan', emoji: '🍱', baseCost: 80, note: 'South Indian thali, very affordable', maps: 'Saravana+Bhavan+Delhi' },
+        { name: 'Temple visit', place: "Lotus Temple (Bahá'í House)", emoji: '🛕', baseCost: 0, note: 'Beautiful lotus-shaped temple, free', lat: 28.5535, lng: 77.2588 },
+        { name: 'Monument', place: 'India Gate', emoji: '🏛️', baseCost: 0, note: 'Iconic war memorial, free all day', lat: 28.6129, lng: 77.2295 },
+        { name: 'Garden', place: 'Lodhi Garden', emoji: '🌿', baseCost: 0, note: '15th century garden, free entry', lat: 28.5931, lng: 77.2197 },
+        { name: 'Street food', place: 'Paranthe Wali Gali', emoji: '🥞', baseCost: 60, note: 'Famous stuffed parathas since 1875', lat: 28.6562, lng: 77.2312 },
+        { name: 'Chai stop', place: 'Chaayos Café', emoji: '☕', baseCost: 50, note: 'Best chai variations in Delhi', lat: 28.6315, lng: 77.2167 },
+        { name: 'Evening walk', place: 'Connaught Place', emoji: '🌆', baseCost: 0, note: "Free walk around Delhi's heart", lat: 28.6315, lng: 77.2167 },
+        { name: 'Lunch', place: 'Saravana Bhavan Delhi', emoji: '🍱', baseCost: 80, note: 'South Indian thali, very affordable', lat: 28.6315, lng: 77.2167 },
       ],
       slow: [
-        { name: 'Museum', place: 'National Museum Delhi', emoji: '🏛️', baseCost: 20, note: 'India\'s largest museum, student discount available', maps: 'National+Museum+Delhi' },
-        { name: 'Bazaar walk', place: 'Dilli Haat Craft Market', emoji: '🛍️', baseCost: 30, note: 'Crafts from all over India in one place', maps: 'Dilli+Haat+Delhi' },
-        { name: 'Heritage', place: 'Humayun\'s Tomb', emoji: '🕌', baseCost: 35, note: 'UNESCO site, inspiration for Taj Mahal', maps: 'Humayun+Tomb+Delhi' },
-        { name: 'Street food', place: 'Chandni Chowk Food Walk', emoji: '🌮', baseCost: 100, note: 'Jalebi, chaat, biryani all in one lane', maps: 'Chandni+Chowk+Delhi' },
-        { name: 'Café', place: 'The Piano Man Jazz Club Café', emoji: '📚', baseCost: 70, note: 'Chill café with good music', maps: 'Piano+Man+Jazz+Club+Delhi' },
-        { name: 'Sunset', place: 'Qutub Minar', emoji: '🌅', baseCost: 35, note: 'UNESCO minaret, beautiful at sunset', maps: 'Qutub+Minar+Delhi' },
-        { name: 'Metro ride', place: 'Delhi Metro Blue Line', emoji: '🚇', baseCost: 25, note: 'See Delhi cheaply on the metro', maps: 'Delhi+Metro' },
+        { name: 'Museum', place: 'National Museum Delhi', emoji: '🏛️', baseCost: 20, note: "India's largest museum, student discount", lat: 28.6117, lng: 77.2219 },
+        { name: 'Craft market', place: 'Dilli Haat Craft Market', emoji: '🛍️', baseCost: 30, note: 'Crafts from all over India', lat: 28.5714, lng: 77.2073 },
+        { name: 'Heritage', place: "Humayun's Tomb", emoji: '🕌', baseCost: 35, note: 'UNESCO site, inspiration for Taj Mahal', lat: 28.5933, lng: 77.2507 },
+        { name: 'Food walk', place: 'Chandni Chowk Food Walk', emoji: '🌮', baseCost: 100, note: 'Jalebi, chaat, biryani in one lane', lat: 28.6562, lng: 77.2312 },
+        { name: 'Jazz café', place: 'The Piano Man Jazz Club', emoji: '📚', baseCost: 70, note: 'Chill café with good music', lat: 28.5921, lng: 77.2108 },
+        { name: 'Sunset', place: 'Qutub Minar', emoji: '🌅', baseCost: 35, note: 'UNESCO minaret, beautiful at sunset', lat: 28.5244, lng: 77.1855 },
+        { name: 'Metro ride', place: 'Delhi Metro Blue Line', emoji: '🚇', baseCost: 25, note: 'See Delhi cheaply on the metro', lat: 28.6315, lng: 77.2167 },
       ],
       adventurous: [
-        { name: 'Trek', place: 'Aravalli Biodiversity Park', emoji: '🧗', baseCost: 0, note: 'Free nature walk & trail in the city', maps: 'Aravalli+Biodiversity+Park+Delhi' },
-        { name: 'Cycling', place: 'Nehru Park Cycling Track', emoji: '🚴', baseCost: 50, note: 'Rent cycles in this massive park', maps: 'Nehru+Park+Delhi' },
-        { name: 'Sport', place: 'Siri Fort Sports Complex', emoji: '🏸', baseCost: 60, note: 'Badminton & squash courts', maps: 'Siri+Fort+Sports+Delhi' },
-        { name: 'Adventure', place: 'Delhi Rock Climbing Wall', emoji: '🏔️', baseCost: 80, note: 'Indoor rock climbing in Siri Fort', maps: 'Siri+Fort+Rock+Climbing+Delhi' },
-        { name: 'Open ground', place: 'Jawaharlal Nehru Stadium Grounds', emoji: '⚽', baseCost: 0, note: 'Free ground for sports', maps: 'JLN+Stadium+Delhi' },
-        { name: 'Day trip', place: 'Sultanpur Bird Sanctuary', emoji: '🌲', baseCost: 30, note: 'Bird watching day trip near Delhi', maps: 'Sultanpur+Bird+Sanctuary' },
-        { name: 'Meal', place: 'Al Jawahar Restaurant', emoji: '🥙', baseCost: 80, note: 'Old Delhi mutton curry, very filling', maps: 'Al+Jawahar+Delhi' },
+        { name: 'Nature walk', place: 'Aravalli Biodiversity Park', emoji: '🧗', baseCost: 0, note: 'Free nature walk & trail in the city', lat: 28.5459, lng: 77.1533 },
+        { name: 'Cycling', place: 'Nehru Park Cycling Track', emoji: '🚴', baseCost: 50, note: 'Rent cycles in this massive park', lat: 28.5972, lng: 77.1979 },
+        { name: 'Sports', place: 'Siri Fort Sports Complex', emoji: '🏸', baseCost: 60, note: 'Badminton & squash courts', lat: 28.5494, lng: 77.2173 },
+        { name: 'Rock climbing', place: 'Delhi Rock Climbing Wall', emoji: '🏔️', baseCost: 80, note: 'Indoor rock climbing in Siri Fort', lat: 28.5494, lng: 77.2173 },
+        { name: 'Open ground', place: 'JLN Stadium Grounds', emoji: '⚽', baseCost: 0, note: 'Free ground for sports', lat: 28.5832, lng: 77.2336 },
+        { name: 'Bird watching', place: 'Sultanpur Bird Sanctuary', emoji: '🌲', baseCost: 30, note: 'Bird watching day trip near Delhi', lat: 28.4289, lng: 76.8792 },
+        { name: 'Old Delhi meal', place: 'Al Jawahar Restaurant', emoji: '🥙', baseCost: 80, note: 'Old Delhi mutton curry, very filling', lat: 28.6562, lng: 77.2312 },
       ]
     },
     Bangalore: {
       chill: [
-        { name: 'Temple', place: 'ISKCON Temple Bangalore', emoji: '🛕', baseCost: 0, note: 'Stunning temple complex, peaceful & free', maps: 'ISKCON+Temple+Bangalore' },
-        { name: 'Park', place: 'Lalbagh Botanical Garden', emoji: '🌿', baseCost: 10, note: 'Beautiful 240-acre garden, very affordable', maps: 'Lalbagh+Botanical+Garden+Bangalore' },
-        { name: 'Park', place: 'Cubbon Park', emoji: '🌳', baseCost: 0, note: 'Huge park in city center, free entry', maps: 'Cubbon+Park+Bangalore' },
-        { name: 'Breakfast', place: 'MTR Restaurant (Mavalli Tiffin Rooms)', emoji: '🍽️', baseCost: 60, note: 'Famous masala dosa since 1924', maps: 'MTR+Restaurant+Bangalore' },
-        { name: 'Café', place: 'Koshy\'s Café', emoji: '☕', baseCost: 60, note: 'Bangalore\'s most iconic old café', maps: 'Koshys+Cafe+Bangalore' },
-        { name: 'Evening', place: 'Ulsoor Lake', emoji: '🌅', baseCost: 0, note: 'Calm lake walk, free and peaceful', maps: 'Ulsoor+Lake+Bangalore' },
-        { name: 'Lunch', place: 'Vidyarthi Bhavan', emoji: '🍱', baseCost: 50, note: 'Legendary dosa place, cash only, very cheap', maps: 'Vidyarthi+Bhavan+Bangalore' },
+        { name: 'Temple', place: 'ISKCON Temple Bangalore', emoji: '🛕', baseCost: 0, note: 'Stunning temple complex, free', lat: 13.0093, lng: 77.5510 },
+        { name: 'Botanical garden', place: 'Lalbagh Botanical Garden', emoji: '🌿', baseCost: 10, note: '240-acre garden, very affordable', lat: 12.9507, lng: 77.5848 },
+        { name: 'City park', place: 'Cubbon Park', emoji: '🌳', baseCost: 0, note: 'Huge park in city center, free', lat: 12.9763, lng: 77.5929 },
+        { name: 'Breakfast', place: 'MTR Restaurant', emoji: '🍽️', baseCost: 60, note: 'Famous masala dosa since 1924', lat: 12.9513, lng: 77.5685 },
+        { name: 'Heritage café', place: "Koshy's Café", emoji: '☕', baseCost: 60, note: "Bangalore's most iconic old café", lat: 12.9745, lng: 77.5969 },
+        { name: 'Evening', place: 'Ulsoor Lake', emoji: '🌅', baseCost: 0, note: 'Calm lake walk, free and peaceful', lat: 12.9850, lng: 77.6197 },
+        { name: 'Lunch', place: 'Vidyarthi Bhavan', emoji: '🍱', baseCost: 50, note: 'Legendary dosa place, very cheap', lat: 12.9454, lng: 77.5707 },
       ],
       slow: [
-        { name: 'Museum', place: 'Visvesvaraya Industrial & Tech Museum', emoji: '🏛️', baseCost: 60, note: 'Interactive science museum, student discount', maps: 'Visvesvaraya+Museum+Bangalore' },
-        { name: 'Market', place: 'Commercial Street Market', emoji: '🛍️', baseCost: 100, note: 'Budget clothes and accessories shopping', maps: 'Commercial+Street+Bangalore' },
-        { name: 'Café', place: 'Matteo Coffea', emoji: '📚', baseCost: 80, note: 'Third wave coffee, great ambience', maps: 'Matteo+Coffea+Bangalore' },
-        { name: 'Street food', place: 'VV Puram Food Street', emoji: '🌮', baseCost: 100, note: 'Best food street in Bangalore — masala puri, dahi puri', maps: 'VV+Puram+Food+Street+Bangalore' },
-        { name: 'Heritage', place: 'Bangalore Palace', emoji: '🏰', baseCost: 230, note: 'Tudor-style royal palace', maps: 'Bangalore+Palace' },
-        { name: 'Sunset', place: 'Nandi Hills Sunset View', emoji: '🌅', baseCost: 30, note: 'Best sunset viewpoint near Bangalore', maps: 'Nandi+Hills+Bangalore' },
-        { name: 'Bus ride', place: 'BMTC City Bus Tour', emoji: '🚌', baseCost: 20, note: 'See Bangalore on a Rs.20 bus', maps: 'BMTC+Bangalore' },
+        { name: 'Museum', place: 'Visvesvaraya Industrial Museum', emoji: '🏛️', baseCost: 60, note: 'Interactive science museum', lat: 12.9791, lng: 77.5913 },
+        { name: 'Market', place: 'Commercial Street Market', emoji: '🛍️', baseCost: 100, note: 'Budget clothes and accessories', lat: 12.9826, lng: 77.6077 },
+        { name: 'Third wave café', place: 'Matteo Coffea', emoji: '📚', baseCost: 80, note: 'Third wave coffee, great ambience', lat: 12.9799, lng: 77.5929 },
+        { name: 'Food street', place: 'VV Puram Food Street', emoji: '🌮', baseCost: 100, note: 'Best food street — masala puri, dahi puri', lat: 12.9487, lng: 77.5699 },
+        { name: 'Palace', place: 'Bangalore Palace', emoji: '🏰', baseCost: 230, note: 'Tudor-style royal palace', lat: 13.0110, lng: 77.5922 },
+        { name: 'Sunset hills', place: 'Nandi Hills Sunset View', emoji: '🌅', baseCost: 30, note: 'Best sunset viewpoint near Bangalore', lat: 13.3702, lng: 77.6835 },
+        { name: 'City bus', place: 'BMTC City Bus Tour', emoji: '🚌', baseCost: 20, note: 'See Bangalore on a Rs.20 bus', lat: 12.9767, lng: 77.5713 },
       ],
       adventurous: [
-        { name: 'Trek', place: 'Skandagiri Night Trek', emoji: '🧗', baseCost: 50, note: 'Popular hill trek near Bangalore', maps: 'Skandagiri+Bangalore' },
-        { name: 'Cycling', place: 'Bannerghatta National Park Cycling', emoji: '🚴', baseCost: 70, note: 'Cycling trails in forest area', maps: 'Bannerghatta+National+Park+Bangalore' },
-        { name: 'Sport', place: 'Kanteerava Indoor Stadium', emoji: '🏸', baseCost: 60, note: 'Badminton courts, book in advance', maps: 'Kanteerava+Stadium+Bangalore' },
-        { name: 'Outdoor', place: 'Turahalli Forest Trail', emoji: '🌲', baseCost: 0, note: 'Free urban forest trekking trail', maps: 'Turahalli+Forest+Bangalore' },
-        { name: 'Open ground', place: 'Koramangala Indoor Stadium', emoji: '⚽', baseCost: 30, note: 'Football & cricket grounds', maps: 'Koramangala+Stadium+Bangalore' },
-        { name: 'Day trip', place: 'Bheemeshwari Nature Camp', emoji: '🏕️', baseCost: 100, note: 'River & nature day trip', maps: 'Bheemeshwari+Bangalore' },
-        { name: 'Meal', place: 'Empire Restaurant', emoji: '🥙', baseCost: 80, note: 'Famous for chicken & biryani', maps: 'Empire+Restaurant+Bangalore' },
+        { name: 'Night trek', place: 'Skandagiri Night Trek', emoji: '🧗', baseCost: 50, note: 'Popular hill trek near Bangalore', lat: 13.4169, lng: 77.6943 },
+        { name: 'Forest cycling', place: 'Bannerghatta National Park', emoji: '🚴', baseCost: 70, note: 'Cycling trails in forest area', lat: 12.8003, lng: 77.5767 },
+        { name: 'Badminton', place: 'Kanteerava Indoor Stadium', emoji: '🏸', baseCost: 60, note: 'Badminton courts, book in advance', lat: 12.9800, lng: 77.5929 },
+        { name: 'Urban forest', place: 'Turahalli Forest Trail', emoji: '🌲', baseCost: 0, note: 'Free urban forest trekking trail', lat: 12.8927, lng: 77.5134 },
+        { name: 'Football', place: 'Koramangala Indoor Stadium', emoji: '⚽', baseCost: 30, note: 'Football & cricket grounds', lat: 12.9279, lng: 77.6271 },
+        { name: 'Nature camp', place: 'Bheemeshwari Nature Camp', emoji: '🏕️', baseCost: 100, note: 'River & nature day trip', lat: 12.5327, lng: 77.1667 },
+        { name: 'Biryani', place: 'Empire Restaurant', emoji: '🥙', baseCost: 80, note: 'Famous for chicken & biryani', lat: 12.9352, lng: 77.6245 },
       ]
     },
     Hyderabad: {
       chill: [
-        { name: 'Temple', place: 'Birla Mandir', emoji: '🛕', baseCost: 0, note: 'Stunning white marble temple, free entry', maps: 'Birla+Mandir+Hyderabad' },
-        { name: 'Monument', place: 'Charminar', emoji: '🕌', baseCost: 25, note: 'Iconic 400-year-old monument', maps: 'Charminar+Hyderabad' },
-        { name: 'Garden', place: 'NTR Gardens', emoji: '🌿', baseCost: 20, note: 'Large park by the lake, very affordable', maps: 'NTR+Gardens+Hyderabad' },
-        { name: 'Irani chai', place: 'Nimrah Café & Bakery', emoji: '☕', baseCost: 20, note: 'Best Irani chai near Charminar since 1993', maps: 'Nimrah+Cafe+Hyderabad' },
-        { name: 'Street food', place: 'Laad Bazaar Street Food', emoji: '🍽️', baseCost: 60, note: 'Haleem, biryani, and sweets in one lane', maps: 'Laad+Bazaar+Hyderabad' },
-        { name: 'Lake walk', place: 'Hussain Sagar Lake', emoji: '🌅', baseCost: 0, note: 'Large lake with Buddha statue, free walk', maps: 'Hussain+Sagar+Lake+Hyderabad' },
-        { name: 'Lunch', place: 'Hotel Shadab', emoji: '🍱', baseCost: 80, note: 'Legendary Hyderabadi biryani', maps: 'Hotel+Shadab+Hyderabad' },
+        { name: 'Temple', place: 'Birla Mandir', emoji: '🛕', baseCost: 0, note: 'Stunning white marble temple, free', lat: 17.4062, lng: 78.4691 },
+        { name: 'Monument', place: 'Charminar', emoji: '🕌', baseCost: 25, note: '400-year-old iconic monument', lat: 17.3616, lng: 78.4747 },
+        { name: 'Garden', place: 'NTR Gardens', emoji: '🌿', baseCost: 20, note: 'Large park by the lake', lat: 17.4126, lng: 78.4672 },
+        { name: 'Irani chai', place: 'Nimrah Café & Bakery', emoji: '☕', baseCost: 20, note: 'Best Irani chai near Charminar since 1993', lat: 17.3622, lng: 78.4738 },
+        { name: 'Street food', place: 'Laad Bazaar Street Food', emoji: '🍽️', baseCost: 60, note: 'Haleem, biryani, sweets in one lane', lat: 17.3606, lng: 78.4727 },
+        { name: 'Lake walk', place: 'Hussain Sagar Lake', emoji: '🌅', baseCost: 0, note: 'Large lake with Buddha statue, free', lat: 17.4239, lng: 78.4738 },
+        { name: 'Biryani lunch', place: 'Hotel Shadab', emoji: '🍱', baseCost: 80, note: 'Legendary Hyderabadi biryani', lat: 17.3639, lng: 78.4761 },
       ],
       slow: [
-        { name: 'Museum', place: 'Salar Jung Museum', emoji: '🏛️', baseCost: 20, note: 'World\'s largest one-man art collection', maps: 'Salar+Jung+Museum+Hyderabad' },
-        { name: 'Fort visit', place: 'Golconda Fort', emoji: '🏰', baseCost: 25, note: 'Historic fort with sound & light show', maps: 'Golconda+Fort+Hyderabad' },
-        { name: 'Market', place: 'Laad Bazaar Bangle Shopping', emoji: '🛍️', baseCost: 80, note: 'Famous for colorful lac bangles', maps: 'Laad+Bazaar+Hyderabad' },
-        { name: 'Café', place: 'Café Bahar', emoji: '📚', baseCost: 70, note: 'Old school Hyderabadi café', maps: 'Cafe+Bahar+Hyderabad' },
-        { name: 'Food street', place: 'Madina Hotel Food Street', emoji: '🌮', baseCost: 100, note: 'Authentic Old City street food', maps: 'Madina+Hotel+Hyderabad' },
-        { name: 'Sunset', place: 'Necklace Road Sunset Point', emoji: '🌅', baseCost: 0, note: 'Beautiful lake sunset, free', maps: 'Necklace+Road+Hyderabad' },
-        { name: 'Bus', place: 'TSRTC City Bus', emoji: '🚌', baseCost: 15, note: 'Cheapest way to see the city', maps: 'TSRTC+Hyderabad' },
+        { name: 'Museum', place: 'Salar Jung Museum', emoji: '🏛️', baseCost: 20, note: "World's largest one-man art collection", lat: 17.3714, lng: 78.4804 },
+        { name: 'Fort visit', place: 'Golconda Fort', emoji: '🏰', baseCost: 25, note: 'Historic fort with sound & light show', lat: 17.3833, lng: 78.4011 },
+        { name: 'Bangle market', place: 'Laad Bazaar Bangle Shopping', emoji: '🛍️', baseCost: 80, note: 'Famous for colorful lac bangles', lat: 17.3606, lng: 78.4727 },
+        { name: 'Old café', place: 'Café Bahar', emoji: '📚', baseCost: 70, note: 'Old school Hyderabadi café', lat: 17.4120, lng: 78.4698 },
+        { name: 'Food street', place: 'Madina Hotel Food Street', emoji: '🌮', baseCost: 100, note: 'Authentic Old City street food', lat: 17.3639, lng: 78.4761 },
+        { name: 'Sunset', place: 'Necklace Road Sunset Point', emoji: '🌅', baseCost: 0, note: 'Beautiful lake sunset, free', lat: 17.4198, lng: 78.4582 },
+        { name: 'City bus', place: 'TSRTC City Bus', emoji: '🚌', baseCost: 15, note: 'Cheapest way to see the city', lat: 17.4126, lng: 78.4672 },
       ],
       adventurous: [
-        { name: 'Trek', place: 'Ananthagiri Hills Trek', emoji: '🧗', baseCost: 40, note: 'Green hills, easy day trek', maps: 'Ananthagiri+Hills+Hyderabad' },
-        { name: 'Cycling', place: 'Durgam Cheruvu Cycling Track', emoji: '🚴', baseCost: 60, note: 'Scenic cycling around the lake', maps: 'Durgam+Cheruvu+Hyderabad' },
-        { name: 'Sport', place: 'Gachibowli Stadium', emoji: '🏸', baseCost: 50, note: 'Sports courts available for rent', maps: 'Gachibowli+Stadium+Hyderabad' },
-        { name: 'Nature', place: 'KBR National Park Trail', emoji: '🌲', baseCost: 25, note: 'Urban forest with peacocks & deer', maps: 'KBR+National+Park+Hyderabad' },
-        { name: 'Open ground', place: 'Lumbini Park', emoji: '⚽', baseCost: 15, note: 'Park with laser shows in evenings', maps: 'Lumbini+Park+Hyderabad' },
-        { name: 'Day trip', place: 'Nagarjuna Sagar Dam Trip', emoji: '🏊', baseCost: 80, note: 'Massive dam day trip', maps: 'Nagarjuna+Sagar+Dam' },
-        { name: 'Meal', place: 'Paradise Biryani', emoji: '🥙', baseCost: 100, note: 'Most famous biryani in Hyderabad', maps: 'Paradise+Biryani+Hyderabad' },
+        { name: 'Hill trek', place: 'Ananthagiri Hills Trek', emoji: '🧗', baseCost: 40, note: 'Green hills, easy day trek', lat: 17.1833, lng: 78.0667 },
+        { name: 'Lake cycling', place: 'Durgam Cheruvu Cycling', emoji: '🚴', baseCost: 60, note: 'Scenic cycling around the lake', lat: 17.4299, lng: 78.3892 },
+        { name: 'Sports', place: 'Gachibowli Stadium', emoji: '🏸', baseCost: 50, note: 'Sports courts available for rent', lat: 17.4401, lng: 78.3489 },
+        { name: 'Nature park', place: 'KBR National Park Trail', emoji: '🌲', baseCost: 25, note: 'Urban forest with peacocks & deer', lat: 17.4239, lng: 78.4213 },
+        { name: 'Laser show', place: 'Lumbini Park', emoji: '⚽', baseCost: 15, note: 'Park with laser shows in evenings', lat: 17.4126, lng: 78.4757 },
+        { name: 'Day trip', place: 'Nagarjuna Sagar Dam', emoji: '🏊', baseCost: 80, note: 'Massive dam day trip', lat: 16.5748, lng: 79.3129 },
+        { name: 'Famous biryani', place: 'Paradise Biryani', emoji: '🥙', baseCost: 100, note: 'Most famous biryani in Hyderabad', lat: 17.4376, lng: 78.4483 },
       ]
     },
     Kolkata: {
       chill: [
-        { name: 'Temple', place: 'Dakshineswar Kali Temple', emoji: '🛕', baseCost: 0, note: 'Famous riverside temple, free entry', maps: 'Dakshineswar+Kali+Temple+Kolkata' },
-        { name: 'Monument', place: 'Victoria Memorial', emoji: '🏛️', baseCost: 20, note: 'Iconic white marble monument', maps: 'Victoria+Memorial+Kolkata' },
-        { name: 'Park', place: 'Maidan Park', emoji: '🌿', baseCost: 0, note: 'Massive open park, free forever', maps: 'Maidan+Kolkata' },
-        { name: 'Street food', place: 'Puchka at Vivekananda Park', emoji: '🍽️', baseCost: 30, note: 'Best pani puri in India!', maps: 'Vivekananda+Park+Kolkata' },
-        { name: 'Chai', place: 'Indian Coffee House', emoji: '☕', baseCost: 30, note: 'Iconic 1940s coffee house, very cheap', maps: 'Indian+Coffee+House+Kolkata' },
-        { name: 'Evening', place: 'Prinsep Ghat', emoji: '🌅', baseCost: 0, note: 'Beautiful riverside sunset spot, free', maps: 'Prinsep+Ghat+Kolkata' },
-        { name: 'Lunch', place: 'Arsalan Restaurant', emoji: '🍱', baseCost: 90, note: 'Famous Kolkata biryani with potato', maps: 'Arsalan+Restaurant+Kolkata' },
+        { name: 'Temple', place: 'Dakshineswar Kali Temple', emoji: '🛕', baseCost: 0, note: 'Famous riverside temple, free entry', lat: 22.6551, lng: 88.3575 },
+        { name: 'Monument', place: 'Victoria Memorial', emoji: '🏛️', baseCost: 20, note: 'Iconic white marble monument', lat: 22.5448, lng: 88.3426 },
+        { name: 'Park', place: 'Maidan Park', emoji: '🌿', baseCost: 0, note: 'Massive open park, free forever', lat: 22.5560, lng: 88.3434 },
+        { name: 'Street food', place: 'Puchka at Vivekananda Park', emoji: '🍽️', baseCost: 30, note: 'Best pani puri in India!', lat: 22.5185, lng: 88.3697 },
+        { name: 'Heritage chai', place: 'Indian Coffee House', emoji: '☕', baseCost: 30, note: 'Iconic 1940s coffee house', lat: 22.5726, lng: 88.3639 },
+        { name: 'Sunset ghat', place: 'Prinsep Ghat', emoji: '🌅', baseCost: 0, note: 'Beautiful riverside sunset, free', lat: 22.5564, lng: 88.3344 },
+        { name: 'Biryani lunch', place: 'Arsalan Restaurant', emoji: '🍱', baseCost: 90, note: 'Famous Kolkata biryani with potato', lat: 22.5184, lng: 88.3736 },
       ],
       slow: [
-        { name: 'Museum', place: 'Indian Museum Kolkata', emoji: '🏛️', baseCost: 20, note: 'Oldest & largest museum in India', maps: 'Indian+Museum+Kolkata' },
-        { name: 'Market', place: 'New Market (Hogg Market)', emoji: '🛍️', baseCost: 80, note: 'Budget shopping for everything', maps: 'New+Market+Kolkata' },
-        { name: 'Café', place: 'Flurys Tea Room', emoji: '📚', baseCost: 70, note: 'Heritage café since 1927', maps: 'Flurys+Kolkata' },
-        { name: 'Food street', place: 'Tiretti Bazaar Chinese Food Street', emoji: '🌮', baseCost: 80, note: 'Authentic Chinese breakfast street', maps: 'Tiretti+Bazaar+Kolkata' },
-        { name: 'Heritage', place: 'College Street Book Market', emoji: '🎨', baseCost: 50, note: 'World\'s largest second-hand book market', maps: 'College+Street+Kolkata' },
-        { name: 'Tram ride', place: 'Kolkata Tram Ride', emoji: '🚃', baseCost: 10, note: 'India\'s only tram city, Rs.10 per ride!', maps: 'Kolkata+Tram' },
-        { name: 'Sunset', place: 'Howrah Bridge Evening Walk', emoji: '🌅', baseCost: 0, note: 'Walk across India\'s iconic cantilever bridge', maps: 'Howrah+Bridge+Kolkata' },
+        { name: 'Museum', place: 'Indian Museum Kolkata', emoji: '🏛️', baseCost: 20, note: 'Oldest & largest museum in India', lat: 22.5574, lng: 88.3503 },
+        { name: 'Market', place: 'New Market (Hogg Market)', emoji: '🛍️', baseCost: 80, note: 'Budget shopping for everything', lat: 22.5660, lng: 88.3476 },
+        { name: 'Heritage café', place: 'Flurys Tea Room', emoji: '📚', baseCost: 70, note: 'Heritage café since 1927', lat: 22.5649, lng: 88.3514 },
+        { name: 'Chinese street food', place: 'Tiretti Bazaar', emoji: '🌮', baseCost: 80, note: 'Authentic Chinese breakfast street', lat: 22.5741, lng: 88.3544 },
+        { name: 'Book market', place: 'College Street Book Market', emoji: '🎨', baseCost: 50, note: "World's largest second-hand book market", lat: 22.5748, lng: 88.3604 },
+        { name: 'Tram ride', place: 'Kolkata Tram Ride', emoji: '🚃', baseCost: 10, note: "India's only tram city, Rs.10!", lat: 22.5646, lng: 88.3444 },
+        { name: 'Bridge walk', place: 'Howrah Bridge Evening Walk', emoji: '🌅', baseCost: 0, note: "Walk across India's iconic bridge", lat: 22.5851, lng: 88.3468 },
       ],
       adventurous: [
-        { name: 'Trek', place: 'Biharinath Hill Trek (Day Trip)', emoji: '🧗', baseCost: 60, note: 'Nearest hill trek from Kolkata', maps: 'Biharinath+Hill+Kolkata' },
-        { name: 'Cycling', place: 'Eco Park Cycling Track', emoji: '🚴', baseCost: 50, note: 'Huge cycling track in Eco Park', maps: 'Eco+Park+Kolkata+cycling' },
-        { name: 'Sport', place: 'Netaji Indoor Stadium', emoji: '🏸', baseCost: 50, note: 'Badminton & sports courts', maps: 'Netaji+Indoor+Stadium+Kolkata' },
-        { name: 'Nature', place: 'East Kolkata Wetlands Walk', emoji: '🌲', baseCost: 0, note: 'Free wetland nature walk', maps: 'East+Kolkata+Wetlands' },
-        { name: 'Open ground', place: 'Salt Lake Stadium Grounds', emoji: '⚽', baseCost: 0, note: 'Football ground, free to use', maps: 'Salt+Lake+Stadium+Kolkata' },
-        { name: 'Day trip', place: 'Sundarbans Day Trip', emoji: '🏕️', baseCost: 100, note: 'Mangrove forest boat ride', maps: 'Sundarbans+Kolkata' },
-        { name: 'Meal', place: 'Oh! Calcutta Restaurant', emoji: '🥙', baseCost: 90, note: 'Classic Bengali cuisine', maps: 'Oh+Calcutta+Restaurant' },
+        { name: 'Hill trek', place: 'Biharinath Hill Trek', emoji: '🧗', baseCost: 60, note: 'Nearest hill trek from Kolkata', lat: 23.4985, lng: 86.9850 },
+        { name: 'Park cycling', place: 'Eco Park Cycling Track', emoji: '🚴', baseCost: 50, note: 'Huge cycling track in Eco Park', lat: 22.6009, lng: 88.4591 },
+        { name: 'Badminton', place: 'Netaji Indoor Stadium', emoji: '🏸', baseCost: 50, note: 'Badminton & sports courts', lat: 22.5648, lng: 88.3677 },
+        { name: 'Wetlands', place: 'East Kolkata Wetlands Walk', emoji: '🌲', baseCost: 0, note: 'Free wetland nature walk', lat: 22.5325, lng: 88.4382 },
+        { name: 'Football ground', place: 'Salt Lake Stadium Grounds', emoji: '⚽', baseCost: 0, note: 'Football ground, free to use', lat: 22.5781, lng: 88.4042 },
+        { name: 'Mangrove trip', place: 'Sundarbans Day Trip', emoji: '🏕️', baseCost: 100, note: 'Mangrove forest boat ride', lat: 21.9497, lng: 88.9120 },
+        { name: 'Bengali cuisine', place: 'Oh! Calcutta Restaurant', emoji: '🥙', baseCost: 90, note: 'Classic Bengali cuisine', lat: 22.5604, lng: 88.3639 },
       ]
     },
     Pune: {
       chill: [
-        { name: 'Temple', place: 'Dagdusheth Halwai Ganapati Temple', emoji: '🛕', baseCost: 0, note: 'Most famous Ganesh temple in Pune', maps: 'Dagdusheth+Ganapati+Temple+Pune' },
-        { name: 'Garden', place: 'Aga Khan Palace Garden', emoji: '🌿', baseCost: 25, note: 'Historic garden where Gandhi was held', maps: 'Aga+Khan+Palace+Pune' },
-        { name: 'Park', place: 'Empress Botanical Garden', emoji: '🌳', baseCost: 10, note: 'Beautiful 19th century botanical garden', maps: 'Empress+Garden+Pune' },
-        { name: 'Breakfast', place: 'Vaishali Restaurant', emoji: '🍽️', baseCost: 60, note: 'Iconic Pune breakfast since 1960s', maps: 'Vaishali+Restaurant+Pune' },
-        { name: 'Chai stop', place: 'Vohuman Café', emoji: '☕', baseCost: 30, note: 'Best Irani chai & bun maska in Pune', maps: 'Vohuman+Cafe+Pune' },
-        { name: 'Evening', place: 'Parvati Hill Sunset', emoji: '🌅', baseCost: 10, note: 'Best sunset view over Pune city', maps: 'Parvati+Hill+Pune' },
-        { name: 'Lunch', place: 'Durvankur Dining Hall', emoji: '🍱', baseCost: 70, note: 'Best traditional Maharashtrian thali', maps: 'Durvankur+Pune' },
+        { name: 'Temple', place: 'Dagdusheth Halwai Ganapati', emoji: '🛕', baseCost: 0, note: 'Most famous Ganesh temple in Pune', lat: 18.5164, lng: 73.8566 },
+        { name: 'Heritage garden', place: 'Aga Khan Palace Garden', emoji: '🌿', baseCost: 25, note: 'Historic garden where Gandhi was held', lat: 18.5515, lng: 73.9017 },
+        { name: 'Botanical garden', place: 'Empress Botanical Garden', emoji: '🌳', baseCost: 10, note: '19th century botanical garden', lat: 18.5283, lng: 73.8807 },
+        { name: 'Breakfast', place: 'Vaishali Restaurant', emoji: '🍽️', baseCost: 60, note: 'Iconic Pune breakfast since 1960s', lat: 18.5186, lng: 73.8398 },
+        { name: 'Irani chai', place: 'Vohuman Café', emoji: '☕', baseCost: 30, note: 'Best Irani chai & bun maska in Pune', lat: 18.5338, lng: 73.8788 },
+        { name: 'Hill sunset', place: 'Parvati Hill Sunset', emoji: '🌅', baseCost: 10, note: 'Best sunset view over Pune city', lat: 18.4949, lng: 73.8490 },
+        { name: 'Thali lunch', place: 'Durvankur Dining Hall', emoji: '🍱', baseCost: 70, note: 'Best traditional Maharashtrian thali', lat: 18.5186, lng: 73.8398 },
       ],
       slow: [
-        { name: 'Museum', place: 'Raja Dinkar Kelkar Museum', emoji: '🏛️', baseCost: 30, note: 'Fascinating private collection of Indian artifacts', maps: 'Kelkar+Museum+Pune' },
-        { name: 'Market', place: 'Tulsi Baug Market', emoji: '🛍️', baseCost: 80, note: 'Best budget shopping in Pune', maps: 'Tulsi+Baug+Pune' },
-        { name: 'Café', place: 'Café Goodluck', emoji: '📚', baseCost: 50, note: 'Legendary Irani café since 1935', maps: 'Cafe+Goodluck+Pune' },
-        { name: 'Food street', place: 'FC Road Food Zone', emoji: '🌮', baseCost: 100, note: 'Popular student food street', maps: 'FC+Road+Pune' },
-        { name: 'Heritage', place: 'Shaniwar Wada Fort', emoji: '🏰', baseCost: 25, note: 'Historic Peshwa palace fortress', maps: 'Shaniwar+Wada+Pune' },
-        { name: 'Sunset', place: 'Vetal Tekdi Hill Sunset', emoji: '🌅', baseCost: 0, note: 'Free hilltop sunset with city views', maps: 'Vetal+Tekdi+Pune' },
-        { name: 'Bus', place: 'PMPML City Bus', emoji: '🚌', baseCost: 15, note: 'Cheapest way around Pune', maps: 'PMPML+Pune+bus' },
+        { name: 'Museum', place: 'Raja Dinkar Kelkar Museum', emoji: '🏛️', baseCost: 30, note: 'Fascinating private collection of Indian artifacts', lat: 18.5085, lng: 73.8563 },
+        { name: 'Market', place: 'Tulsi Baug Market', emoji: '🛍️', baseCost: 80, note: 'Best budget shopping in Pune', lat: 18.5101, lng: 73.8593 },
+        { name: 'Legendary café', place: 'Café Goodluck', emoji: '📚', baseCost: 50, note: 'Legendary Irani café since 1935', lat: 18.5286, lng: 73.8435 },
+        { name: 'Student food lane', place: 'FC Road Food Zone', emoji: '🌮', baseCost: 100, note: 'Popular student food street', lat: 18.5286, lng: 73.8435 },
+        { name: 'Fort', place: 'Shaniwar Wada Fort', emoji: '🏰', baseCost: 25, note: 'Historic Peshwa palace fortress', lat: 18.5196, lng: 73.8553 },
+        { name: 'Hilltop sunset', place: 'Vetal Tekdi Hill Sunset', emoji: '🌅', baseCost: 0, note: 'Free hilltop sunset with city views', lat: 18.5416, lng: 73.8268 },
+        { name: 'City bus', place: 'PMPML City Bus', emoji: '🚌', baseCost: 15, note: 'Cheapest way around Pune', lat: 18.5196, lng: 73.8553 },
       ],
       adventurous: [
-        { name: 'Trek', place: 'Sinhagad Fort Trek', emoji: '🧗', baseCost: 40, note: 'Famous historical fort, easy half-day trek', maps: 'Sinhagad+Fort+Pune' },
-        { name: 'Cycling', place: 'Mula-Mutha River Cycling Track', emoji: '🚴', baseCost: 50, note: 'Scenic riverside cycling path', maps: 'Mula+Mutha+River+Pune' },
-        { name: 'Sport', place: 'Balewadi Sports Complex', emoji: '🏸', baseCost: 60, note: 'Badminton & swimming complex', maps: 'Balewadi+Sports+Complex+Pune' },
-        { name: 'Nature', place: 'Tamhini Ghat Nature Walk', emoji: '🌲', baseCost: 30, note: 'Beautiful waterfall trail (monsoon season)', maps: 'Tamhini+Ghat+Pune' },
-        { name: 'Open ground', place: 'Nehru Stadium Grounds', emoji: '⚽', baseCost: 0, note: 'Football & cricket grounds', maps: 'Nehru+Stadium+Pune' },
-        { name: 'Day trip', place: 'Rajmachi Fort Trek', emoji: '🏕️', baseCost: 80, note: 'Twin fort trek with amazing views', maps: 'Rajmachi+Fort+Pune' },
-        { name: 'Meal', place: 'Sujata Mastani', emoji: '🥙', baseCost: 60, note: 'Famous Pune mastani (thick milkshake)', maps: 'Sujata+Mastani+Pune' },
+        { name: 'Fort trek', place: 'Sinhagad Fort Trek', emoji: '🧗', baseCost: 40, note: 'Famous historical fort, easy half-day trek', lat: 18.3625, lng: 73.7554 },
+        { name: 'River cycling', place: 'Mula-Mutha River Cycling Track', emoji: '🚴', baseCost: 50, note: 'Scenic riverside cycling path', lat: 18.5238, lng: 73.8697 },
+        { name: 'Sports complex', place: 'Balewadi Sports Complex', emoji: '🏸', baseCost: 60, note: 'Badminton & swimming complex', lat: 18.5641, lng: 73.7705 },
+        { name: 'Waterfall trail', place: 'Tamhini Ghat Nature Walk', emoji: '🌲', baseCost: 30, note: 'Beautiful waterfall trail', lat: 18.4467, lng: 73.4808 },
+        { name: 'Cricket ground', place: 'Nehru Stadium Grounds', emoji: '⚽', baseCost: 0, note: 'Football & cricket grounds', lat: 18.5323, lng: 73.8626 },
+        { name: 'Twin fort trek', place: 'Rajmachi Fort Trek', emoji: '🏕️', baseCost: 80, note: 'Twin fort trek with amazing views', lat: 18.7518, lng: 73.4186 },
+        { name: 'Famous mastani', place: 'Sujata Mastani', emoji: '🥙', baseCost: 60, note: 'Famous Pune mastani thick milkshake', lat: 18.5082, lng: 73.8538 },
       ]
     },
     Jaipur: {
       chill: [
-        { name: 'Temple', place: 'Govind Dev Ji Temple', emoji: '🛕', baseCost: 0, note: 'Sacred Krishna temple inside City Palace, free', maps: 'Govind+Dev+Ji+Temple+Jaipur' },
-        { name: 'Monument', place: 'Hawa Mahal', emoji: '🏰', baseCost: 50, note: 'Palace of Winds, iconic pink façade', maps: 'Hawa+Mahal+Jaipur' },
-        { name: 'Garden', place: 'Sisodia Rani Garden', emoji: '🌿', baseCost: 20, note: 'Terraced Mughal garden, very peaceful', maps: 'Sisodia+Rani+Garden+Jaipur' },
-        { name: 'Street food', place: 'Laxmi Mishtan Bhandar (LMB)', emoji: '🍽️', baseCost: 60, note: 'Famous for Rajasthani sweets & thali', maps: 'LMB+Jaipur' },
-        { name: 'Chai', place: 'Rawat Mishthan Bhandar', emoji: '☕', baseCost: 25, note: 'Pyaaz kachori & chai, very famous', maps: 'Rawat+Mishtan+Bhandar+Jaipur' },
-        { name: 'Evening', place: 'Nahargarh Fort Sunset', emoji: '🌅', baseCost: 50, note: 'Best sunset view over Pink City', maps: 'Nahargarh+Fort+Jaipur' },
-        { name: 'Lunch', place: 'Chokhi Dhani Village Thali', emoji: '🍱', baseCost: 100, note: 'Authentic Rajasthani thali experience', maps: 'Chokhi+Dhani+Jaipur' },
+        { name: 'Temple', place: 'Govind Dev Ji Temple', emoji: '🛕', baseCost: 0, note: 'Sacred Krishna temple, free', lat: 26.9260, lng: 75.8235 },
+        { name: 'Palace of Winds', place: 'Hawa Mahal', emoji: '🏰', baseCost: 50, note: 'Palace of Winds, iconic pink façade', lat: 26.9239, lng: 75.8267 },
+        { name: 'Mughal garden', place: 'Sisodia Rani Garden', emoji: '🌿', baseCost: 20, note: 'Terraced Mughal garden, very peaceful', lat: 26.8922, lng: 75.8619 },
+        { name: 'Rajasthani food', place: 'Laxmi Mishtan Bhandar (LMB)', emoji: '🍽️', baseCost: 60, note: 'Famous for Rajasthani sweets & thali', lat: 26.9239, lng: 75.8267 },
+        { name: 'Famous kachori', place: 'Rawat Mishthan Bhandar', emoji: '☕', baseCost: 25, note: 'Pyaaz kachori & chai, very famous', lat: 26.9028, lng: 75.8069 },
+        { name: 'Fort sunset', place: 'Nahargarh Fort Sunset', emoji: '🌅', baseCost: 50, note: 'Best sunset view over Pink City', lat: 26.9455, lng: 75.8120 },
+        { name: 'Thali', place: 'Chokhi Dhani Village Thali', emoji: '🍱', baseCost: 100, note: 'Authentic Rajasthani thali experience', lat: 26.7787, lng: 75.8419 },
       ],
       slow: [
-        { name: 'Museum', place: 'Albert Hall Museum', emoji: '🏛️', baseCost: 40, note: 'Oldest museum in Rajasthan', maps: 'Albert+Hall+Museum+Jaipur' },
-        { name: 'Market', place: 'Johari Bazaar', emoji: '🛍️', baseCost: 80, note: 'Famous for jewelry & Rajasthani crafts', maps: 'Johari+Bazaar+Jaipur' },
-        { name: 'Café', place: 'Café Palladio', emoji: '📚', baseCost: 80, note: 'Beautiful blue-themed heritage café', maps: 'Cafe+Palladio+Jaipur' },
-        { name: 'Heritage', place: 'City Palace Jaipur', emoji: '🏰', baseCost: 100, note: 'Stunning royal palace complex', maps: 'City+Palace+Jaipur' },
-        { name: 'Food street', place: 'Bapu Bazaar Street Food', emoji: '🌮', baseCost: 80, note: 'Dal baati churma & kachori street', maps: 'Bapu+Bazaar+Jaipur' },
-        { name: 'Heritage walk', place: 'Old Pink City Heritage Walk', emoji: '🚶', baseCost: 0, note: 'Free walk through 300-year-old Pink City', maps: 'Pink+City+Jaipur' },
-        { name: 'Bus', place: 'RSRTC City Bus', emoji: '🚌', baseCost: 15, note: 'Cheapest way to see Jaipur', maps: 'RSRTC+Jaipur' },
+        { name: 'Museum', place: 'Albert Hall Museum', emoji: '🏛️', baseCost: 40, note: 'Oldest museum in Rajasthan', lat: 26.9097, lng: 75.8202 },
+        { name: 'Jewelry bazaar', place: 'Johari Bazaar', emoji: '🛍️', baseCost: 80, note: 'Famous for jewelry & Rajasthani crafts', lat: 26.9218, lng: 75.8257 },
+        { name: 'Blue café', place: 'Café Palladio', emoji: '📚', baseCost: 80, note: 'Beautiful blue-themed heritage café', lat: 26.9260, lng: 75.8235 },
+        { name: 'Royal palace', place: 'City Palace Jaipur', emoji: '🏰', baseCost: 100, note: 'Stunning royal palace complex', lat: 26.9258, lng: 75.8237 },
+        { name: 'Food street', place: 'Bapu Bazaar Street Food', emoji: '🌮', baseCost: 80, note: 'Dal baati churma & kachori street', lat: 26.9160, lng: 75.8217 },
+        { name: 'Heritage walk', place: 'Old Pink City Heritage Walk', emoji: '🚶', baseCost: 0, note: 'Free walk through 300-year-old Pink City', lat: 26.9239, lng: 75.8267 },
+        { name: 'City bus', place: 'RSRTC City Bus', emoji: '🚌', baseCost: 15, note: 'Cheapest way to see Jaipur', lat: 26.9160, lng: 75.8217 },
       ],
       adventurous: [
-        { name: 'Trek', place: 'Amber Fort Hill Trek', emoji: '🧗', baseCost: 50, note: 'Trek up to the magnificent Amber Fort', maps: 'Amber+Fort+Jaipur' },
-        { name: 'Cycling', place: 'Jaipur Cycling Tour (Walled City)', emoji: '🚴', baseCost: 80, note: 'Cycle through the old Pink City', maps: 'Jaipur+cycling+tour' },
-        { name: 'Sport', place: 'Sawai Man Singh Stadium', emoji: '🏸', baseCost: 50, note: 'Sports complex with courts', maps: 'SMS+Stadium+Jaipur' },
-        { name: 'Nature', place: 'Aravalli Hills Walk', emoji: '🌲', baseCost: 0, note: 'Free hill walk near Jaipur', maps: 'Aravalli+Hills+Jaipur' },
-        { name: 'Open ground', place: 'Central Park Jaipur', emoji: '⚽', baseCost: 0, note: 'Huge park for sports & games', maps: 'Central+Park+Jaipur' },
-        { name: 'Day trip', place: 'Sambhar Salt Lake Visit', emoji: '🏕️', baseCost: 60, note: 'India\'s largest inland salt lake', maps: 'Sambhar+Salt+Lake+Jaipur' },
-        { name: 'Meal', place: 'Natraj Restaurant', emoji: '🥙', baseCost: 70, note: 'Best dal baati churma in Jaipur', maps: 'Natraj+Restaurant+Jaipur' },
+        { name: 'Fort trek', place: 'Amber Fort Hill Trek', emoji: '🧗', baseCost: 50, note: 'Trek up to the magnificent Amber Fort', lat: 26.9855, lng: 75.8513 },
+        { name: 'Old city cycling', place: 'Jaipur Cycling Tour (Walled City)', emoji: '🚴', baseCost: 80, note: 'Cycle through the old Pink City', lat: 26.9239, lng: 75.8267 },
+        { name: 'Sports complex', place: 'SMS Stadium', emoji: '🏸', baseCost: 50, note: 'Sports complex with courts', lat: 26.8946, lng: 75.8011 },
+        { name: 'Hill walk', place: 'Aravalli Hills Walk', emoji: '🌲', baseCost: 0, note: 'Free hill walk near Jaipur', lat: 26.9455, lng: 75.8120 },
+        { name: 'Central park', place: 'Central Park Jaipur', emoji: '⚽', baseCost: 0, note: 'Huge park for sports & games', lat: 26.9092, lng: 75.7956 },
+        { name: 'Salt lake trip', place: 'Sambhar Salt Lake Visit', emoji: '🏕️', baseCost: 60, note: "India's largest inland salt lake", lat: 26.8953, lng: 75.1920 },
+        { name: 'Dal baati', place: 'Natraj Restaurant', emoji: '🥙', baseCost: 70, note: 'Best dal baati churma in Jaipur', lat: 26.9160, lng: 75.8217 },
       ]
     }
   };
@@ -554,7 +687,7 @@
     const shuffled = [...pool].sort(() => Math.random() - 0.5);
     for (const act of shuffled) {
       const total = act.baseCost * people;
-      if (remaining - total >= 0 || act.baseCost === 0) {
+      if (remaining - total >= 0) {
         chosen.push({ ...act, total });
         remaining -= total;
         if (chosen.length >= 5) break;
@@ -566,7 +699,22 @@
     document.getElementById('planTitle').textContent = vibe.charAt(0).toUpperCase() + vibe.slice(1) + ' Day in ' + city;
     document.getElementById('planMeta').textContent = '₹' + budget.toLocaleString('en-IN') + ' for ' + people + ' people · ₹' + Math.round(budget / people).toLocaleString('en-IN') + ' per person';
 
-    document.getElementById('activityList').innerHTML = chosen.map(a => `
+    document.getElementById('activityList').innerHTML = chosen.map(a => {
+      let distanceHtml = '';
+      let directionsHtml = '';
+
+      if (userLat && userLng) {
+        const km = getDistance(userLat, userLng, a.lat, a.lng);
+        const cls = distanceClass(km);
+        const icon = cls === 'near' ? '🟢' : cls === 'medium' ? '🟡' : '🔴';
+        distanceHtml = `<span class="distance-badge ${cls}">${icon} ${formatDistance(km)} · ${walkTime(km)}</span>`;
+        directionsHtml = `<a class="directions-btn" href="https://www.openstreetmap.org/directions?engine=fossgis_osrm_foot&route=${userLat},${userLng};${a.lat},${a.lng}" target="_blank">🗺️ Get Directions</a><a class="osm-btn" href="https://www.openstreetmap.org/?mlat=${a.lat}&mlon=${a.lng}&zoom=16" target="_blank">📍 View on Map</a>`;
+      } else {
+        distanceHtml = `<span class="distance-badge">📍 Tap "Detect Me" for distance</span>`;
+        directionsHtml = `<a class="osm-btn" href="https://www.openstreetmap.org/?mlat=${a.lat}&mlon=${a.lng}&zoom=16" target="_blank">📍 View on Map</a>`;
+      }
+
+      return `
       <div class="activity">
         <div class="activity-top">
           <div class="activity-emoji">${a.emoji}</div>
@@ -577,10 +725,12 @@
           </div>
           <div class="activity-cost">${a.total === 0 ? 'Free' : '₹' + a.total.toLocaleString('en-IN')}</div>
         </div>
-        <a class="maps-btn" href="https://www.google.com/maps/search/${a.maps}" target="_blank">
-          🗺️ Open in Google Maps
-        </a>
-      </div>`).join('');
+        <div class="activity-footer">
+          ${distanceHtml}
+          ${directionsHtml}
+        </div>
+      </div>`;
+    }).join('');
 
     const fill = document.getElementById('budgetBarFill');
     fill.style.width = pct + '%';
@@ -589,7 +739,7 @@
     document.getElementById('sumSpent').textContent = '₹' + spent.toLocaleString('en-IN');
     document.getElementById('sumSaved').textContent = '₹' + remaining.toLocaleString('en-IN');
     document.getElementById('sumPer').textContent = '₹' + Math.round(spent / people).toLocaleString('en-IN');
-    document.getElementById('tipsGrid').innerHTML = (cityTips[city] || cityTips['Chennai']).map(t => `<div class="tip"><strong>Tip</strong>${t}</div>`).join('');
+    document.getElementById('tipsGrid').innerHTML = (cityTips[city] || cityTips['Chennai']).map(t => `<div class="tip"><strong>💡 Tip</strong>${t}</div>`).join('');
 
     const res = document.getElementById('results');
     res.style.display = 'none'; res.classList.remove('show');
@@ -602,7 +752,10 @@
     const p = window._lastPlan; if (!p) return;
     let txt = `BudgetBuddy Plan - ${p.vibe.toUpperCase()} DAY IN ${p.city.toUpperCase()}\n`;
     txt += `Budget: Rs.${p.budget} | People: ${p.people} | Per person: Rs.${Math.round(p.budget / p.people)}\n\n`;
-    p.chosen.forEach(a => { txt += `${a.emoji} ${a.name} — ${a.place}\n   ${a.note}\n   Cost: ${a.total === 0 ? 'Free' : 'Rs.' + a.total}\n   Maps: https://www.google.com/maps/search/${a.maps}\n\n`; });
+    p.chosen.forEach(a => {
+      const dist = userLat ? ` (${formatDistance(getDistance(userLat, userLng, a.lat, a.lng))})` : '';
+      txt += `${a.emoji} ${a.name} — ${a.place}${dist}\n   ${a.note}\n   Cost: ${a.total === 0 ? 'Free' : 'Rs.' + a.total}\n   Map: https://www.openstreetmap.org/?mlat=${a.lat}&mlon=${a.lng}&zoom=16\n\n`;
+    });
     txt += `Total spent: Rs.${p.spent} | Saved: Rs.${p.remaining}\nGenerated by BudgetBuddy`;
     navigator.clipboard.writeText(txt).then(() => {
       const btn = document.querySelector('.share-btn');
